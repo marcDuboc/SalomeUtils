@@ -21,8 +21,6 @@ geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
-### START OF MACRO
-
 class AutoContact(QWidget):
     def __init__(self):
         super(AutoContact, self).__init__()
@@ -257,5 +255,3 @@ d.setWindowFlags(d.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
 d.setWindowTitle(" 3D Contacts ")
 d.setGeometry(600, 300, 400, 400)
 d.show()
-
-# END OF MACRO
