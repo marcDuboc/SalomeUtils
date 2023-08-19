@@ -1,0 +1,302 @@
+[
+    {
+        "id": "1",
+        "type": "bonded",
+        "parts": [
+            "P11",
+            "P12"
+        ],
+        "surfaces": [
+            "_C1A",
+            "_C1B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "2",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C2A",
+            "_C2B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "3",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C3A",
+            "_C3B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "4",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C4A",
+            "_C4B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "5",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C5A",
+            "_C5B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "6",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C6A",
+            "_C6B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "7",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C7A",
+            "_C7B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "8",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C8A",
+            "_C8B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "9",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C9A",
+            "_C9B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "10",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C10A",
+            "_C10B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "11",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C11A",
+            "_C11B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "12",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C12A",
+            "_C12B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "13",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C13A",
+            "_C13B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "14",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C14A",
+            "_C14B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "15",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C15A",
+            "_C15B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "16",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C16A",
+            "_C16B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "17",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C17A",
+            "_C17B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "18",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C18A",
+            "_C18B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "19",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P20"
+        ],
+        "surfaces": [
+            "_C19A",
+            "_C19B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    },
+    {
+        "id": "20",
+        "type": "bonded",
+        "parts": [
+            "P17",
+            "P19"
+        ],
+        "surfaces": [
+            "_C20A",
+            "_C20B"
+        ],
+        "master": null,
+        "gap": null,
+        "completed": true
+    }
+]
