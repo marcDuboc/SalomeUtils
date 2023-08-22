@@ -1,0 +1,34 @@
+MESH = LIRE_MAILLAGE(UNITE=20)
+
+MODEL = AFFE_MODELE(AFFE=_F(MODELISATION='3D',
+                            PHENOMENE='MECANIQUE',
+                            TOUT='OUI'),
+                    MAILLAGE=MESH)
+
+S40CMD8 = DEFI_MATERIAU(ELAS=_F(E=200000.0,
+                                NU=0.33))
+
+S25CD4 = DEFI_MATERIAU(ELAS=_F(E=200000.0,
+                               NU=0.33))
+
+FMAT = AFFE_MATERIAU(AFFE=_F(MATER=(S40CMD8, ),
+                             TOUT='OUI'),
+                     MODELE=MODEL)
+
+FIX = AFFE_CHAR_MECA(DDL_IMPO=(_F(DX=0.0,
+                                  DY=0.0,
+                                  DZ=0.0,
+                                  GROUP_NO=('F0', )),
+                               _F(DX=0.0,
+                                  DZ=0.0,
+                                  GROUP_NO=('F1', )),
+                               _F(DY=0.0,
+                                  DZ=0.0,
+                                  GROUP_NO=('F2', )),
+                               _F(DZ=0.0,
+                                  GROUP_NO=('F3', ))),
+                     MODELE=MODEL)
+
+PRESS = AFFE_CHAR_MECA(MODELE=MODEL,
+                       PRES_REP=_F(GROUP_MA=('PRESS', ),
+                                   PRES=0.4))
