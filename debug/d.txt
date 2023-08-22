@@ -1,34 +1,68 @@
-MESH = LIRE_MAILLAGE(UNITE=20)
-
-MODEL = AFFE_MODELE(AFFE=_F(MODELISATION='3D',
-                            PHENOMENE='MECANIQUE',
-                            TOUT='OUI'),
-                    MAILLAGE=MESH)
-
-S40CMD8 = DEFI_MATERIAU(ELAS=_F(E=200000.0,
-                                NU=0.33))
-
-S25CD4 = DEFI_MATERIAU(ELAS=_F(E=200000.0,
-                               NU=0.33))
-
-FMAT = AFFE_MATERIAU(AFFE=_F(MATER=(S40CMD8, ),
-                             TOUT='OUI'),
-                     MODELE=MODEL)
-
-FIX = AFFE_CHAR_MECA(DDL_IMPO=(_F(DX=0.0,
-                                  DY=0.0,
-                                  DZ=0.0,
-                                  GROUP_NO=('F0', )),
-                               _F(DX=0.0,
-                                  DZ=0.0,
-                                  GROUP_NO=('F1', )),
-                               _F(DY=0.0,
-                                  DZ=0.0,
-                                  GROUP_NO=('F2', )),
-                               _F(DZ=0.0,
-                                  GROUP_NO=('F3', ))),
-                     MODELE=MODEL)
-
-PRESS = AFFE_CHAR_MECA(MODELE=MODEL,
-                       PRES_REP=_F(GROUP_MA=('PRESS', ),
-                                   PRES=0.4))
+0:1:1
+<SALOMEDS._objref_SObject object at 0x0000019D2F1F7C50>
+Geometry
+Depth
+Destroy
+FindAttribute
+FindSubObject
+GetAllAttributes
+GetComment
+GetFather
+GetFatherComponent
+GetID
+GetIOR
+GetLastChildTag
+GetLocalImpl
+GetName
+GetObject
+IsNull
+Name
+ReferencedObject
+Register
+SetAttrString
+Tag
+UnRegister
+_NP_RepositoryId
+_NP_disconnect
+__class__
+__delattr__
+__dict__
+__dir__
+__doc__
+__eq__
+__format__
+__ge__
+__getattribute__
+__getstate__
+__gt__
+__hash__
+__init__
+__init_subclass__
+__le__
+__lt__
+__module__
+__ne__
+__new__
+__reduce__
+__reduce_ex__
+__repr__
+__setattr__
+__setstate__
+__sizeof__
+__str__
+__subclasshook__
+__weakref__
+_duplicate
+_dynamic_op
+_get_Name
+_get_interface
+_hash
+_is_a
+_is_equivalent
+_narrow
+_nil
+_non_existent
+_obj
+_release
+_set_Name
+_unchecked_narrow

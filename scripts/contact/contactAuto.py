@@ -26,20 +26,24 @@ salome.salome_init()
 # contact name regex
 re_name= re.compile(r'_C\d+(.+?)')
 
-DEBUG_FILE = 'E://GIT_REPO//SalomeUtils//debug//d.txt'
+DEBUG_FILE = 'E://GitRepo/SalomeUtils//debug//d.txt'
 
 class Contact():
-    def __init__(self,id,part,surface):
+    def __init__(self,id,part,part_id,surface,surface_id):
         self.id = id
         self.type = "bonded"  # bonded, sliding, separation
         self.parts = [None,None]  # part name as string
+        self.parts_id = [None,None]  # part id as int
         self.surfaces = [None,None]  # surface name as string
+        self.surfaces_id = [None,None]  # surface id as int
         self.master = None  # master number as surface index
         self.gap = None  # gap value as float
         self.completed= False # contact completed: both part and surface are defined
 
         self.parts[0]=part
         self.surfaces[0]=surface
+        self.parts_id[0]=part_id
+        self.surfaces_id[0]=surface_id
 
     def __str__(self):
         return "{id: " + str(self.id) + " type: " + self.type +""
@@ -54,7 +58,7 @@ class Contact():
             return False
         
     def to_dict(self):
-        return {"id":self.id,"type":self.type,"parts":self.parts,"surfaces":self.surfaces,"master":self.master,"gap":self.gap,"completed":self.completed}
+        return {"id":self.id,"type":self.type,"parts":self.parts,"parts_id":self.parts_id,"surfaces":self.surfaces,"surfaces_id":self.surfaces_id,"master":self.master,"gap":self.gap,"completed":self.completed}
 
     def swap_master_slave(self):
         if self.master == 0:
@@ -62,10 +66,12 @@ class Contact():
         else:
             self.master = 0
 
-    def add(self,part,surface):
+    def add(self,part,part_id,surface,surface_id):
         if self.surfaces[0]!=surface:
             self.parts[1]=part
+            self.parts_id[1]=part_id
             self.surfaces[1]=surface
+            self.surfaces_id[1]=surface_id
             self.completed = True
 
 
@@ -80,7 +86,7 @@ class AutoContact(QWidget):
         # parse for existing contact
         root = salome.myStudy.FindComponentID("0:1:1")
         self.parseContact(root)
-        self.exportContact("E://GIT_REPO//SalomeUtils//debug//contact.json")
+        self.exportContact("E://GitRepo//SalomeUtils//debug//contact.json")
         self.selectParts()
         
 
@@ -94,25 +100,25 @@ class AutoContact(QWidget):
         iter.InitEx(True)
         while iter.More():
             c = iter.Value()
-            pc = geomtools.IDToSObject(c.GetID()).GetFather()
             c_name =c.GetName()
-            #print(c.SubShapeID())
+
+            pc = geomtools.IDToSObject(c.GetID()).GetFather()
             pc_name =pc.GetName()
 
-            # check if c name is valid re_name
             if re_name.match(c_name):
                 # extract id
+                pc_id = self.get_GEOM_Object(pc.GetID()).GetSubShapeIndices()[0]
+                c_id= self.get_GEOM_Object(c.GetID()).GetSubShapeIndices()[0]
                 id = re.findall(r'\d+', c_name)[0]
+
                 # check if id exist in contact list
                 if id not in self.contacts.keys():
-                        #print('new contact',id, c_name, pc_name)
-                        new_contact = Contact(id,pc_name,c_name)
+                        new_contact = Contact(id,pc_name,pc_id,c_name,c_id)
                         self.contacts[id]=new_contact
                         contact_id_list.append(id)
                         
                 elif id in self.contacts.keys() and self.contacts[id].completed == False:
-                        #print("to existing contact",id, c_name, pc_name)
-                        self.contacts[id].add(pc_name,c_name)
+                        self.contacts[id].add(pc_name,pc_id,c_name,c_id)
 
             iter.Next()
 
