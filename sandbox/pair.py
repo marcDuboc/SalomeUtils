@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-# extract contact from json
-# License: LGPL v 2.1
-# Autor: Marc DUBOC
-# Version: 11/08/2023
-
 import sys
 import json
 import re
@@ -16,27 +10,6 @@ try:
     import Utilitai
 except:
     DEBUG=True
-
-"""
-input json file as list of dict:
-[
-    {
-        "id": "1",
-        "type": "bonded",
-        "parts": [
-            "P1",
-            "P19"
-        ],
-        "surfaces": [
-            "_C1S",
-            "_C1M"
-        ],
-        "master": null,
-        "gap": null,
-        "completed": true
-    },...]
-
-"""
 
 
 # ________________________________________________________________
@@ -60,8 +33,12 @@ def getPair(data):
     pairs = dict()
     for item in data:
         if item["type"] in ("bonded", "sliding"):
-            sid = getSlaveMasterIndex(item["surfaces"], re.compile(".*S$"))
-            pairs[item['id']] = (item["parts_id"][sid], item["surfaces_id"][sid])
+
+            for i in range(len(item["parts"])):
+
+                if item["surfaces"][i][-1] == "S":
+                    pairs[item['id']] = (
+                        item["parts_id"][i], item["surfaces_id"][i])
     return pairs
 
 def getPairSet(pairs):
@@ -125,10 +102,11 @@ def extractContact(data,pairs):
             # check master and slave index. master surface name end with M, slave surface name end with S
             # built tuple pair: (master by the part name, slave as surface name)
             if not item["id"] in getPairSet(pairs):
-                mid = getSlaveMasterIndex(item["surfaces"], re.compile(".*M$"))
-                sid = getSlaveMasterIndex(item["surfaces"], re.compile(".*S$"))
-                master = item["parts"][mid]
-                slave = item["surfaces"][sid]
+                for i in range(len(item["parts"])):
+                    if item["surfaces"][i][-1] == "M":
+                        master = item["parts"][i]
+                    else:
+                        slave = item["surfaces"][i]
 
                 if item["type"] == "bonded":
                     if DEBUG:
@@ -166,13 +144,13 @@ def extractContact(data,pairs):
             if DEBUG:
                 bonded.append((master, slave))
             else:
-                bonded.append(_F(GROUP_MA_ESCL=(slave, ),GROUP_MA_MAIT=tuple(master)))
+                bonded.append(_F(GROUP_MA_ESCL=(slave, ),GROUP_MA_MAIT=(master, )))
 
         elif contact_type == "sliding":
             if DEBUG:
                 sliding.append((master, slave,'DNOR','DNOR'))
             else:
-                sliding.append(_F(GROUP_MA_ESCL=(slave, ),GROUP_MA_MAIT=tuple(master),DDL_MAIT = 'DNOR', DDL_ESCL = 'DNOR')) 
+                sliding.append(_F(GROUP_MA_ESCL=(slave, ),GROUP_MA_MAIT=(master, ),DDL_MAIT = 'DNOR', DDL_ESCL = 'DNOR')) 
 
 
     return dict(bonded=bonded, sliding=sliding, friction=friction, frictionless=frictionless)
