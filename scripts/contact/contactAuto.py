@@ -86,7 +86,7 @@ class AutoContact(QWidget):
         # parse for existing contact
         root = salome.myStudy.FindComponentID("0:1:1")
         self.parseContact(root)
-        self.exportContact("E://GitRepo//SalomeUtils//debug//contact.json")
+        self.exportContact("E:\GIT_REPO\SalomeUtils\debug\contact.json")
         self.selectParts()
         
 
@@ -159,6 +159,12 @@ class AutoContact(QWidget):
                 None, 'Error', "error in create group", QMessageBox.Abort)
 
     def initUI(self):
+        # select root component
+        self.l_root= QLabel("Root component: ", self)
+        self.lb_root = QLineEdit()
+        self.bt_root = QPushButton()
+        self.bt_root.setText("Load root")
+
         # 3D parts selected
         self.l_parts = QLabel("3D Parts for contact analysis: ", self)
         self.tb_parts = QTextBrowser()
@@ -180,10 +186,6 @@ class AutoContact(QWidget):
         self.sb_ctol.setValue(0.01)
         self.sb_ctol.setSingleStep(0.001)
 
-        # Common open_gmsh_options
-        #self.cb_common = QCheckBox("  Compound Results",self)
-        # self.cb_common.setChecked(Qt.Unchecked)
-
         # Ok buttons:
         self.okbox = QDialogButtonBox(self)
         self.okbox.setOrientation(Qt.Horizontal)
@@ -192,21 +194,37 @@ class AutoContact(QWidget):
 
         # Layout:
         layout = QGridLayout()
-        layout.addWidget(self.l_parts, 1, 0)
-        layout.addWidget(self.tb_parts, 2, 0)
-        layout.addWidget(self.pb_loadpart, 3, 0)
-        layout.addWidget(self.l_gap, 4, 0)
-        layout.addWidget(self.sb_gap, 5, 0)
-        layout.addWidget(self.l_ctol, 6, 0)
-        layout.addWidget(self.sb_ctol, 7, 0)
-        layout.addWidget(self.okbox, 8, 0)
+        layout.addWidget(self.l_root, 1, 0)
+        layout.addWidget(self.lb_root, 2, 0)
+        layout.addWidget(self.bt_root, 2, 1)
+        layout.addWidget(self.l_parts, 3, 0)
+        layout.addWidget(self.tb_parts, 4, 0)
+        layout.addWidget(self.pb_loadpart, 5, 0)
+        layout.addWidget(self.l_gap, 6, 0)
+        layout.addWidget(self.sb_gap, 7, 0)
+        layout.addWidget(self.l_ctol, 8, 0)
+        layout.addWidget(self.sb_ctol, 9, 0)
+        layout.addWidget(self.okbox, 10, 0)
         self.setLayout(layout)
 
         # Connectors:
         self.okbox.accepted.connect(self.process)
         self.okbox.rejected.connect(self.cancel)
         self.pb_loadpart.clicked.connect(self.selectParts)
+        self.bt_root.clicked.connect(self.selectRoot)
 
+    def selectRoot(self):
+        try:
+            #sel = salome.sg.SelectedCount()
+            sel_i = salome.sg.getSelected(0)
+            print(sel_i)
+            #root = self.get_GEOM_Object(sel_i)
+            #self.lb_root.setText(root.GetName())
+            self.lb_root.setText(sel_i)
+
+        except:
+            QMessageBox.critical(
+                None, 'Error', "error in selected root", QMessageBox.Abort)
 
     def selectParts(self):
         try:
@@ -224,6 +242,11 @@ class AutoContact(QWidget):
         except:
             QMessageBox.critical(
                 None, 'Error', "error in selected parts", QMessageBox.Abort)
+
+    def getSlaveMasterIndex(surfaces, pattern=re.compile(".*S$")):
+        # return the postion of the slave
+        index = next((i for i, string in enumerate(surfaces) if pattern.match(string)), None)
+        return index
 
     def parseShape(self, list_shapes, kind=['PLANAR', 'PLANE', 'CYLINDER', 'CYLINDER2D', 'SPHERE', 'FACE']):
         res = list()
@@ -303,37 +326,26 @@ class AutoContact(QWidget):
                 props = geompy.BasicProperties(common)
                 area_com = props[1]
                 if area_com == 0.0:
-                    return False
-                
-            """elif cylinder1['diameter'] != cylinder2['diameter']:
-                delta_radius = (cylinder1['diameter']/2) - (cylinder2['diameter']/2)
-                ns = geompy.MakeOffset(shape1, abs(delta_radius))
-                print(geompy.KindOfShape(ns))
-                nr = (geompy.KindOfShape(ns)[7])/2
-                if nr ==  cylinder2['diameter']/2:
-                        common = geompy.MakeCommon(ns, shape2)
-                        props = geompy.BasicProperties(common)
-                        area_com = props[1]
-                        if area_com == 0.0:
-                            return False
-                else:
-                    ns = geompy.MakeOffset(shape2, abs(delta_radius))
-                    nr = (geompy.KindOfShape(ns)[7])/2
-                    common = geompy.MakeCommon(ns, shape1)
-                    props = geompy.BasicProperties(common)
-                    area_com = props[1]
-                    if area_com == 0.0:
-                        return False
-            """    
+                    return False  
 
             # Comparer les diamètres
             if (abs(cylinder1['diameter'] - cylinder2['diameter']) > gap):
                 return False
-            
-
-            
 
             return True
+
+    def is_slave_candidate_adjacent_to_other(self, part_id, surface_candidate):
+        #lookup contact other contact surface on the same part
+        for _,v in self.contacts.items():
+            if part_id in v["parts_id"]:
+                slave_index= self.getSlaveMasterIndex(v["surfaces"], re.compile(".*S$"))
+                if v["parts_id"].index(part_id) == slave_index:
+                    # check if the surfaces are adjacent
+                    isadjacent, _, _ = geompy.FastIntersect(v["surfaces_id"][slave_index], surface_candidate, 0.0)
+                    if isadjacent:
+                        return True
+        return False
+        
 
     def process(self):
         selCount = 0
@@ -395,12 +407,12 @@ class AutoContact(QWidget):
                                 else:
                                     id = max(contacts_list)+1
 
+                                # first check with the area: the smallest area is the salve
                                 # define the smallest area as slave
                                 area = (geompy.BasicProperties(c[0])[1],geompy.BasicProperties(c[1])[1])
-
-                                #with open(DEBUG_FILE, 'a') as f:
-                                #    f.write(str(area)+'\n')
+                                smallest_area_index=area.index(min(area))
                              
+                                # second check is there adajent slave surface on the slave surface
                                 if area[0] >= area[1]:
                                     name_group_1 = '_C' + str(id) + 'M'
                                     name_group_2 = '_C' + str(id) + 'S'
@@ -421,14 +433,14 @@ class AutoContact(QWidget):
                                     combine[i][1], c[1], name_group_2)
                                 gg.setColor(grp_id, color_2[0], color_2[1], color_2[2])
 
-                                # surfaceid pair
-                                #surfaceid = (geompy.GetSubShapeID(combine[i][0], c[0]), geompy.GetSubShapeID(combine[i][1], c[1]))
-                                #with open(DEBUG_FILE, 'a') as f:
-                                #    f.write(str(surfaceid)+'\n')
-
                                 # create contact
-                                new_contact = Contact(id, combine[i][0].GetName(), c[0].GetName())
-                                new_contact.add(combine[i][1].GetName(), c[1].GetName())
+                                pc0_id = combine[i][0].GetSubShapeIndices()[0]
+                                pc1_id = combine[i][1].GetSubShapeIndices()[0]
+                                c0_id = c[0].GetSubShapeIndices()[0]
+                                c1_id = c[1].GetSubShapeIndices()[0]
+
+                                new_contact = Contact(id, combine[i][0].GetName(),pc0_id ,c[0].GetName(),c0_id)
+                                new_contact.add(combine[i][1].GetName(),pc1_id, c[1].GetName(),c1_id)
                                 self.contacts[str(id)]=(new_contact)
 
             msg_cont = "nb contacts : " + str(num_cont)
