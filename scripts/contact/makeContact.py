@@ -198,3 +198,6 @@ bonded = contact["bonded"]
 sliding = contact["sliding"]
 friction = contact["friction"]
 frictionless = contact["frictionless"]
+
+for item in bonded:
+    print("_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}')),".format(item[1],item[0]))
