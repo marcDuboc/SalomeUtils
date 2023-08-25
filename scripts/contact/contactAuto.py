@@ -9,6 +9,7 @@ import itertools
 import re
 import json
 import numpy as np
+import GEOM
 import salome
 from salome.geom import geomBuilder, geomtools
 
@@ -74,51 +75,55 @@ class Contact():
             self.surfaces_id[1]=surface_id
             self.completed = True
 
-
-
 class AutoContact(QWidget):
     def __init__(self):
         super(AutoContact, self).__init__()
+        self.compound_id=None
+        self.root_tree_id=('0:1:1')
+        self.compound_child=list()
         self.contacts = dict()
         self.parts = list()
         self.initUI()
-
-        # parse for existing contact
-        root = salome.myStudy.FindComponentID("0:1:1")
-        self.parseContact(root)
-        self.exportContact("E:\GIT_REPO\SalomeUtils\debug\contact.json")
-        self.selectParts()
-        
 
     def __del__(self):
         return
 
     # parse tree for contacts
-    def parseContact(self, root):
+    def parseContact(self, root_tree_id, compound_id, pattern= re.compile(r'_C\d+(.+?)')):
+
         contact_id_list=list()
-        iter = salome.myStudy.NewChildIterator(root)
+        root_tree= salome.myStudy.FindComponentID(root_tree_id)
+        iter = salome.myStudy.NewChildIterator(root_tree)
         iter.InitEx(True)
+
+        test_id = compound_id.split(":")
+        length_id = len(test_id)
+
         while iter.More():
             c = iter.Value()
-            c_name =c.GetName()
+            c_id = c.GetID().split(":")
+            c_id = c_id[:length_id]
 
-            pc = geomtools.IDToSObject(c.GetID()).GetFather()
-            pc_name =pc.GetName()
+            #check if the surface id is part of the compound id
+            #check id the group name is not directly under the compound (shout be a level 2 chilf of the compound)
+            if test_id == c_id and (length_id-len(c_id))>1:
+                c_name =c.GetName()
+                if pattern.match(c_name):
 
-            if re_name.match(c_name):
-                # extract id
-                pc_id = self.get_GEOM_Object(pc.GetID()).GetSubShapeIndices()[0]
-                c_id= self.get_GEOM_Object(c.GetID()).GetSubShapeIndices()[0]
-                id = re.findall(r'\d+', c_name)[0]
+                    pc = geomtools.IDToSObject(c.GetID()).GetFather()
+                    pc_name =pc.GetName()                
+                    pc_id = self.get_GEOM_Object(pc.GetID()).GetSubShapeIndices()[0]
+                    c_id= self.get_GEOM_Object(c.GetID()).GetSubShapeIndices()[0]
+                    id = re.findall(r'\d+', c_name)[0]
 
-                # check if id exist in contact list
-                if id not in self.contacts.keys():
-                        new_contact = Contact(id,pc_name,pc_id,c_name,c_id)
-                        self.contacts[id]=new_contact
-                        contact_id_list.append(id)
-                        
-                elif id in self.contacts.keys() and self.contacts[id].completed == False:
-                        self.contacts[id].add(pc_name,pc_id,c_name,c_id)
+                    # check if id exist in contact list
+                    if id not in self.contacts.keys():
+                            new_contact = Contact(id,pc_name,pc_id,c_name,c_id)
+                            self.contacts[id]=new_contact
+                            contact_id_list.append(id)
+                            
+                    elif id in self.contacts.keys() and self.contacts[id].completed == False:
+                            self.contacts[id].add(pc_name,pc_id,c_name,c_id)
 
             iter.Next()
 
@@ -129,7 +134,6 @@ class AutoContact(QWidget):
             lct.append(v.to_dict())
         with open(filename, 'w') as f:
             json.dump(lct,f, indent=4)
-
 
     # get existing contact list
     def get_id_list(self):
@@ -211,33 +215,43 @@ class AutoContact(QWidget):
         self.okbox.accepted.connect(self.process)
         self.okbox.rejected.connect(self.cancel)
         self.pb_loadpart.clicked.connect(self.selectParts)
-        self.bt_root.clicked.connect(self.selectRoot)
+        self.bt_root.clicked.connect(self.selectCompound)
 
-    def selectRoot(self):
+    def selectCompound(self):
         try:
-            #sel = salome.sg.SelectedCount()
-            sel_i = salome.sg.getSelected(0)
-            print(sel_i)
-            #root = self.get_GEOM_Object(sel_i)
-            #self.lb_root.setText(root.GetName())
-            self.lb_root.setText(sel_i)
+            selCount = salome.sg.SelectedCount()
+            if selCount > 1:
+                QMessageBox.critical(
+                    None, 'Error', "Select only one root component", QMessageBox.Abort)
+            else:    
+                self.compound_id = salome.sg.getSelected(0)
+                self.compound = self.get_GEOM_Object(self.compound_id)
+                self.lb_root.setText(self.compound.GetName())
+
+                # get all the solid child of the root
+                self.compound_child = geompy.GetExistingSubObjects(self.compound)
+                # pritn to debug file
+                #with open(DEBUG_FILE, 'w') as f:
+                   # f.write(str(self.compound_id))
+                self.parseContact(self.root_tree_id,self.compound_id)
 
         except:
             QMessageBox.critical(
-                None, 'Error', "error in selected root", QMessageBox.Abort)
+                None, 'Error', "Please select a component with solid", QMessageBox.Abort)
 
     def selectParts(self):
         try:
-            selCount = salome.sg.SelectedCount()
-            selobj = list()
-            self.tb_parts.clear()
+            if self.root != None:
+                selCount = salome.sg.SelectedCount()
+                selobj = list()
+                self.tb_parts.clear()
 
-            for i in range(0, selCount):
-                sel_i = salome.sg.getSelected(i)
-                selobj_i = salome.myStudy.FindObjectID(sel_i).GetObject()
-                selobj.append(selobj_i)
-                self.tb_parts.append(selobj[i].GetName())
-            self.parts = selobj
+                for i in range(0, selCount):
+                    sel_i = salome.sg.getSelected(i)
+                    selobj_i = salome.myStudy.FindObjectID(sel_i).GetObject()
+                    selobj.append(selobj_i)
+                    self.tb_parts.append(selobj[i].GetName())
+                self.parts = selobj
 
         except:
             QMessageBox.critical(
@@ -346,7 +360,6 @@ class AutoContact(QWidget):
                         return True
         return False
         
-
     def process(self):
         selCount = 0
         num_cont = 0
