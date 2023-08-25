@@ -222,7 +222,7 @@ class AutoContact(QWidget):
             QMessageBox.critical(
                 None, 'Error', "error in selected parts", QMessageBox.Abort)
 
-    def getSlaveMasterIndex(surfaces, pattern=re.compile(".*S$")):
+    def getSlaveMasterIndex(self,surfaces, pattern=re.compile(".*S$")):
         # return the postion of the slave
         index = next((i for i, string in enumerate(
             surfaces) if pattern.match(string)), None)
@@ -319,28 +319,40 @@ class AutoContact(QWidget):
     def is_slave_candidate_adjacent_to_other(self, part_id, surface_candidate):
         # lookup contact other contact surface on the same part
         surface_slave = None
-        for _, v in self.contacts.items():
-            if part_id in v["parts_id"]:
-                slave_index = self.getSlaveMasterIndex(
-                    v["surfaces"], re.compile(".*S$"))
-                
-                if v["parts_id"].index(part_id) == slave_index:
-                    # check if the surfaces are adjacent
-                    # lookup in part list the surface name
-                    for p in self.compound_child:
-                        if p.getSubShapeIndices()[0] == v["parts_id"][slave_index]:
-                            for s in geompy.SubShapeAll(p, geompy.ShapeType["FACE"]):
-                                if s.getSubShapeIndices()[0] == v["surfaces_id"][slave_index]:
-                                    surface_slave = s
-                                    break
-                            else:
-                                continue
-                            break
+        for _, v in self.contacts.items():        
+            if v.completed:
+                if part_id in v.parts_id:
+                    # get the index of the slave surface
+                    slave_index = self.getSlaveMasterIndex(v.surfaces, re.compile(".*S$"))
 
-                    isadjacent, _, _ = geompy.FastIntersect(
-                        surface_slave, surface_candidate, 0.0)
-                    if isadjacent:
-                        return True
+                    with open(DEBUG_FILE, 'a') as f:
+                        f.write(str(v.surfaces) + '\t'+ str(slave_index) + '\t' + str(v.parts_id.index(part_id) == slave_index) + '\n')
+
+                    if v.parts_id.index(part_id) == slave_index:
+
+                        # lookup the compound child list to find the part
+                        for p in self.compound_child:
+                            if p.GetSubShapeIndices()[0] == v.parts_id[slave_index]:
+
+                                # check all face of the parts to find the surface
+                                for s in geompy.SubShapeAll(p, geompy.ShapeType["FACE"]):
+
+                                    # lookup all the surface of the part to find the slave surface
+                                    if s.GetSubShapeIndices()[0] == v.surfaces_id[slave_index]:
+                                        surface_slave = s
+                                        break
+                                else:
+                                    continue
+                                break
+
+                    # check if the surfaces are adjacent
+                    if surface_slave != None:
+                        try:
+                            isadjacent, _, _ = geompy.FastIntersect(surface_slave, surface_candidate, 0.0)
+                            if isadjacent:
+                                return True
+                        except:
+                            return False
         return False
 
     def process(self):
@@ -407,13 +419,19 @@ class AutoContact(QWidget):
 
                                 # first check with the area: the smallest area is the salve
                                 # define the smallest area as slave
-                                area = (geompy.BasicProperties(c[0])[
-                                        1], geompy.BasicProperties(c[1])[1])
+                                area = (geompy.BasicProperties(c[0])[1], geompy.BasicProperties(c[1])[1])
                                 smallest_area_index = area.index(min(area))
-                                master_surface = smallest_area_index
+
+                                master_surface=0
+
+                                if smallest_area_index==0:
+                                    master_surface = 1
+
+                                #with open(DEBUG_FILE, 'a') as f:
+                                #    f.write(str(area) + '\t'+ str(smallest_area_index) + '\n')
 
                                 if self.is_slave_candidate_adjacent_to_other(combine[i][smallest_area_index].GetSubShapeIndices()[0], c[smallest_area_index]):
-                                    if smallest_area_index==0:
+                                    if master_surface == 0:
                                         master_surface = 1
                                     else:
                                         master_surface = 0
@@ -447,11 +465,14 @@ class AutoContact(QWidget):
                                 c0_id = c[0].GetSubShapeIndices()[0]
                                 c1_id = c[1].GetSubShapeIndices()[0]
 
-                                new_contact = ContactItem(
-                                    id, combine[i][0].GetName(), pc0_id, c[0].GetName(), c0_id)
-                                new_contact.add(
-                                    combine[i][1].GetName(), pc1_id, c[1].GetName(), c1_id)
-                                self.contacts[str(id)] = (new_contact)
+                                new_contact = ContactItem(id, combine[i][0].GetName(), pc0_id, name_group_1, c0_id)
+                                new_contact.add(combine[i][1].GetName(), pc1_id, name_group_2, c1_id)
+                                self.contacts[str(id)] = new_contact
+                                
+                                
+                                #with open(DEBUG_FILE, 'a') as f:
+                                #    f.write(str(pc0_id)+'\t'+str(pc1_id)+'\t'+str(c0_id)+'\t'+str(c1_id)+ '\n')
+                                #    f.write("new contact => " + str(self.contacts[str(id)].__repr__) + '\n')
 
             msg_cont = "nb contacts : " + str(num_cont)
             QMessageBox.information(
