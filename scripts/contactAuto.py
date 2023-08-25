@@ -4,8 +4,10 @@
 # Autor: Marc DUBOC
 # Version: 11/08/2023
 
+import os
+import inspect
+import sys
 import itertools
-#from copy import deepcopy
 import re
 import json
 import numpy as np
@@ -19,68 +21,35 @@ import PyQt5.QtCore as QtCore
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 
+# add contact module
+try:
+    from contact.dataclass import ContactItem
+    from contact.utils import get_GEOM_Object, get_SALOMEDS_SObject
+
+except:
+    script_directory = os.path.dirname(
+        os.path.abspath(inspect.getfile(inspect.currentframe())))
+    sys.path.append(script_directory)
+    from contact.dataclass import ContactItem
+    from contact.utils import get_GEOM_Object, get_SALOMEDS_SObject
+
 # Detect current study
 geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
 # contact name regex
-re_name= re.compile(r'_C\d+(.+?)')
+re_name = re.compile(r'_C\d+(.+?)')
 
-DEBUG_FILE = 'E://GitRepo/SalomeUtils//debug//d.txt'
-
-class Contact():
-    def __init__(self,id,part,part_id,surface,surface_id):
-        self.id = id
-        self.type = "bonded"  # bonded, sliding, separation
-        self.parts = [None,None]  # part name as string
-        self.parts_id = [None,None]  # part id as int
-        self.surfaces = [None,None]  # surface name as string
-        self.surfaces_id = [None,None]  # surface id as int
-        self.master = None  # master number as surface index
-        self.gap = None  # gap value as float
-        self.completed= False # contact completed: both part and surface are defined
-
-        self.parts[0]=part
-        self.surfaces[0]=surface
-        self.parts_id[0]=part_id
-        self.surfaces_id[0]=surface_id
-
-    def __str__(self):
-        return "{id: " + str(self.id) + " type: " + self.type +""
-
-    def __repr__(self) -> str:
-        return "{id: " + str(self.id) +", completed:"+str(self.completed) +", type: " + self.type + ", parts:[" + str(self.parts[0])+','+str(self.parts[1]) +"], surfaces:[" +str(self.surfaces[0])+','+str(self.surfaces[1]) +"]}"    
-    
-    def isValid(self):
-        if self.id != None:
-            return True
-        else:
-            return False
-        
-    def to_dict(self):
-        return {"id":self.id,"type":self.type,"parts":self.parts,"parts_id":self.parts_id,"surfaces":self.surfaces,"surfaces_id":self.surfaces_id,"master":self.master,"gap":self.gap,"completed":self.completed}
-
-    def swap_master_slave(self):
-        if self.master == 0:
-            self.master = 1
-        else:
-            self.master = 0
-
-    def add(self,part,part_id,surface,surface_id):
-        if self.surfaces[0]!=surface:
-            self.parts[1]=part
-            self.parts_id[1]=part_id
-            self.surfaces[1]=surface
-            self.surfaces_id[1]=surface_id
-            self.completed = True
+DEBUG_FILE = 'E://GIT_REPO/SalomeUtils//debug//d.txt'
+JSON_FILE = 'E://GIT_REPO/SalomeUtils//debug//contact.json'
 
 class AutoContact(QWidget):
     def __init__(self):
         super(AutoContact, self).__init__()
-        self.compound_id=None
-        self.root_tree_id=('0:1:1')
-        self.compound_child=list()
+        self.compound_id = None
+        self.root_tree_id = ('0:1:1')
+        self.compound_child = list()
         self.contacts = dict()
         self.parts = list()
         self.initUI()
@@ -89,67 +58,62 @@ class AutoContact(QWidget):
         return
 
     # parse tree for contacts
-    def parseContact(self, root_tree_id, compound_id, pattern= re.compile(r'_C\d+(.+?)')):
+    def parseContact(self, root_tree_id, compound_id, pattern=re.compile(r'_C\d+(.+?)')):
 
-        contact_id_list=list()
-        root_tree= salome.myStudy.FindComponentID(root_tree_id)
+        contact_id_list = list()
+        root_tree = salome.myStudy.FindComponentID(root_tree_id)
         iter = salome.myStudy.NewChildIterator(root_tree)
         iter.InitEx(True)
 
         test_id = compound_id.split(":")
         length_id = len(test_id)
 
+        #with open(DEBUG_FILE, 'w') as f:
+        #    f.write('ref test \t'+str(test_id)+'\t'+str(length_id)+'\n')
+
         while iter.More():
             c = iter.Value()
             c_id = c.GetID().split(":")
-            c_id = c_id[:length_id]
+            test_c_id = c_id[:length_id]
 
-            #check if the surface id is part of the compound id
-            #check id the group name is not directly under the compound (shout be a level 2 chilf of the compound)
-            if test_id == c_id and (length_id-len(c_id))>1:
-                c_name =c.GetName()
+            #with open(DEBUG_FILE, 'a') as f:
+            #    f.write(str(c_id)+'\t'+str(len(c_id))+'\n'+str(test_id == test_c_id)+'\n')
+
+            # check if the surface id is part of the compound id
+            # check id the group name is not directly under the compound (shout be a level 2 chilf of the compound)
+            if test_id == test_c_id and (length_id-len(c_id))>  1:
+                c_name = c.GetName()
                 if pattern.match(c_name):
 
                     pc = geomtools.IDToSObject(c.GetID()).GetFather()
-                    pc_name =pc.GetName()                
-                    pc_id = self.get_GEOM_Object(pc.GetID()).GetSubShapeIndices()[0]
-                    c_id= self.get_GEOM_Object(c.GetID()).GetSubShapeIndices()[0]
+                    pc_name = pc.GetName()
+                    pc_id = get_GEOM_Object(pc.GetID()).GetSubShapeIndices()[0]
+                    c_id = get_GEOM_Object(c.GetID()).GetSubShapeIndices()[0]
                     id = re.findall(r'\d+', c_name)[0]
 
                     # check if id exist in contact list
                     if id not in self.contacts.keys():
-                            new_contact = Contact(id,pc_name,pc_id,c_name,c_id)
-                            self.contacts[id]=new_contact
-                            contact_id_list.append(id)
-                            
+                        new_contact = ContactItem(
+                            id, pc_name, pc_id, c_name, c_id)
+                        self.contacts[id] = new_contact
+                        contact_id_list.append(id)
+
                     elif id in self.contacts.keys() and self.contacts[id].completed == False:
-                            self.contacts[id].add(pc_name,pc_id,c_name,c_id)
+                        self.contacts[id].add(pc_name, pc_id, c_name, c_id)
 
             iter.Next()
+
+        self.exportContact(JSON_FILE)
 
     # export contact list to json file
     def exportContact(self, filename):
         lct = list()
-        for _,v in self.contacts.items():
+        for _, v in self.contacts.items():
             lct.append(v.to_dict())
         with open(filename, 'w') as f:
-            json.dump(lct,f, indent=4)
+            json.dump(lct, f, indent=4)
 
-    # get existing contact list
-    def get_id_list(self):
-        ids = list()
-        for i in range(0, len(self.contacts)):
-            ids.append(self.contacts[i].id)
-        return ids
-
-    # get object => IDL:SALOMEDS/SObject:1.0
-    def get_SALOMEDS_SObject(self, id):
-        return geomtools.IDToSObject(id)
-
-    # get object => IDL:GEOM/GEOM_Object:1.0
-    def get_GEOM_Object(self, id):
-        return salome.myStudy.FindObjectID(id).GetObject()
-
+    # create group
     def createGroup(self, parentShape, subshape, name):
         try:
             group = geompy.CreateGroup(parentShape, geompy.ShapeType["FACE"])
@@ -164,7 +128,7 @@ class AutoContact(QWidget):
 
     def initUI(self):
         # select root component
-        self.l_root= QLabel("Root component: ", self)
+        self.l_root = QLabel("Root component: ", self)
         self.lb_root = QLineEdit()
         self.bt_root = QPushButton()
         self.bt_root.setText("Load root")
@@ -223,17 +187,18 @@ class AutoContact(QWidget):
             if selCount > 1:
                 QMessageBox.critical(
                     None, 'Error', "Select only one root component", QMessageBox.Abort)
-            else:    
+            else:
                 self.compound_id = salome.sg.getSelected(0)
-                self.compound = self.get_GEOM_Object(self.compound_id)
+                self.compound = get_GEOM_Object(self.compound_id)
                 self.lb_root.setText(self.compound.GetName())
 
                 # get all the solid child of the root
-                self.compound_child = geompy.GetExistingSubObjects(self.compound)
+                self.compound_child = geompy.GetExistingSubObjects(
+                    self.compound)
                 # pritn to debug file
-                #with open(DEBUG_FILE, 'w') as f:
-                   # f.write(str(self.compound_id))
-                self.parseContact(self.root_tree_id,self.compound_id)
+                # with open(DEBUG_FILE, 'w') as f:
+                # f.write(str(self.compound_id))
+                self.parseContact(self.root_tree_id, self.compound_id)
 
         except:
             QMessageBox.critical(
@@ -241,14 +206,14 @@ class AutoContact(QWidget):
 
     def selectParts(self):
         try:
-            if self.root != None:
+            if self.compound_id != None:
                 selCount = salome.sg.SelectedCount()
                 selobj = list()
                 self.tb_parts.clear()
 
                 for i in range(0, selCount):
                     sel_i = salome.sg.getSelected(i)
-                    selobj_i = salome.myStudy.FindObjectID(sel_i).GetObject()
+                    selobj_i = get_GEOM_Object(sel_i)
                     selobj.append(selobj_i)
                     self.tb_parts.append(selobj[i].GetName())
                 self.parts = selobj
@@ -259,7 +224,8 @@ class AutoContact(QWidget):
 
     def getSlaveMasterIndex(surfaces, pattern=re.compile(".*S$")):
         # return the postion of the slave
-        index = next((i for i, string in enumerate(surfaces) if pattern.match(string)), None)
+        index = next((i for i, string in enumerate(
+            surfaces) if pattern.match(string)), None)
         return index
 
     def parseShape(self, list_shapes, kind=['PLANAR', 'PLANE', 'CYLINDER', 'CYLINDER2D', 'SPHERE', 'FACE']):
@@ -288,7 +254,7 @@ class AutoContact(QWidget):
         """
         point_vec = np.array(point) - np.array(line_point)
         return np.linalg.norm(point_vec - np.dot(point_vec, line_dir) * line_dir)
-    
+
     def point_to_point_distance(self, point1, point2):
         """
         Calcule la distance entre deux points.
@@ -327,20 +293,22 @@ class AutoContact(QWidget):
             if distance_centers_to_line1 > (cylinder1['diameter'] / 2 + tolerance) or \
                     distance_centers_to_line2 > (cylinder2['diameter'] / 2 + tolerance):
                 return False
-            
+
             # Check if overlap between cylinders along the axis
-            distance_centers = self.point_to_point_distance(cylinder1['center'], cylinder2['center'])
-            gap_mini = min(cylinder1['length'], cylinder2['length'])*0.01 # 1% of the smallest length
-            if (distance_centers + gap_mini)> (cylinder1['length'] / 2 + cylinder2['length'] / 2):
+            distance_centers = self.point_to_point_distance(
+                cylinder1['center'], cylinder2['center'])
+            # 1% of the smallest length
+            gap_mini = min(cylinder1['length'], cylinder2['length'])*0.01
+            if (distance_centers + gap_mini) > (cylinder1['length'] / 2 + cylinder2['length'] / 2):
                 return False
-            
+
             # check if diameter are equal and area contact is not null
             if cylinder1['diameter'] == cylinder2['diameter']:
                 common = geompy.MakeCommon(shape1, shape2)
                 props = geompy.BasicProperties(common)
                 area_com = props[1]
                 if area_com == 0.0:
-                    return False  
+                    return False
 
             # Comparer les diamètres
             if (abs(cylinder1['diameter'] - cylinder2['diameter']) > gap):
@@ -349,17 +317,32 @@ class AutoContact(QWidget):
             return True
 
     def is_slave_candidate_adjacent_to_other(self, part_id, surface_candidate):
-        #lookup contact other contact surface on the same part
-        for _,v in self.contacts.items():
+        # lookup contact other contact surface on the same part
+        surface_slave = None
+        for _, v in self.contacts.items():
             if part_id in v["parts_id"]:
-                slave_index= self.getSlaveMasterIndex(v["surfaces"], re.compile(".*S$"))
+                slave_index = self.getSlaveMasterIndex(
+                    v["surfaces"], re.compile(".*S$"))
+                
                 if v["parts_id"].index(part_id) == slave_index:
                     # check if the surfaces are adjacent
-                    isadjacent, _, _ = geompy.FastIntersect(v["surfaces_id"][slave_index], surface_candidate, 0.0)
+                    # lookup in part list the surface name
+                    for p in self.compound_child:
+                        if p.getSubShapeIndices()[0] == v["parts_id"][slave_index]:
+                            for s in geompy.SubShapeAll(p, geompy.ShapeType["FACE"]):
+                                if s.getSubShapeIndices()[0] == v["surfaces_id"][slave_index]:
+                                    surface_slave = s
+                                    break
+                            else:
+                                continue
+                            break
+
+                    isadjacent, _, _ = geompy.FastIntersect(
+                        surface_slave, surface_candidate, 0.0)
                     if isadjacent:
                         return True
         return False
-        
+
     def process(self):
         selCount = 0
         num_cont = 0
@@ -402,7 +385,8 @@ class AutoContact(QWidget):
                     # check if subshapes intersect
                     for c in comb_sub:
                         try:
-                            ss_isOk, _, _ = geompy.FastIntersect(c[0], c[1], gap)
+                            ss_isOk, _, _ = geompy.FastIntersect(
+                                c[0], c[1], gap)
 
                         except:
                             ss_isOk = False
@@ -414,7 +398,8 @@ class AutoContact(QWidget):
 
                             if (area_com > 0.0) or (self.are_cylinders_coincident(c[0], c[1], gap) == True):
                                 num_cont += 1
-                                contacts_list= [int(x) for x in self.contacts.keys()]
+                                contacts_list = [int(x)
+                                                 for x in self.contacts.keys()]
                                 if len(contacts_list) == 0:
                                     id = 1
                                 else:
@@ -422,17 +407,25 @@ class AutoContact(QWidget):
 
                                 # first check with the area: the smallest area is the salve
                                 # define the smallest area as slave
-                                area = (geompy.BasicProperties(c[0])[1],geompy.BasicProperties(c[1])[1])
-                                smallest_area_index=area.index(min(area))
-                             
+                                area = (geompy.BasicProperties(c[0])[
+                                        1], geompy.BasicProperties(c[1])[1])
+                                smallest_area_index = area.index(min(area))
+                                master_surface = smallest_area_index
+
+                                if self.is_slave_candidate_adjacent_to_other(combine[i][smallest_area_index].GetSubShapeIndices()[0], c[smallest_area_index]):
+                                    if smallest_area_index==0:
+                                        master_surface = 1
+                                    else:
+                                        master_surface = 0
+
                                 # second check is there adajent slave surface on the slave surface
-                                if area[0] >= area[1]:
+                                if master_surface == 0:
                                     name_group_1 = '_C' + str(id) + 'M'
                                     name_group_2 = '_C' + str(id) + 'S'
                                     color_1 = (255, 0, 0)
                                     color_2 = (0, 0, 255)
 
-                                elif area[0] < area[1]:
+                                elif master_surface == 1:
                                     name_group_1 = '_C' + str(id) + 'S'
                                     name_group_2 = '_C' + str(id) + 'M'
                                     color_1 = (0, 0, 255)
@@ -440,11 +433,13 @@ class AutoContact(QWidget):
 
                                 grp_id = self.createGroup(
                                     combine[i][0], c[0], name_group_1)
-                                gg.setColor(grp_id, color_1[0], color_1[1], color_1[2])
+                                gg.setColor(
+                                    grp_id, color_1[0], color_1[1], color_1[2])
 
                                 grp_id = self.createGroup(
                                     combine[i][1], c[1], name_group_2)
-                                gg.setColor(grp_id, color_2[0], color_2[1], color_2[2])
+                                gg.setColor(
+                                    grp_id, color_2[0], color_2[1], color_2[2])
 
                                 # create contact
                                 pc0_id = combine[i][0].GetSubShapeIndices()[0]
@@ -452,12 +447,15 @@ class AutoContact(QWidget):
                                 c0_id = c[0].GetSubShapeIndices()[0]
                                 c1_id = c[1].GetSubShapeIndices()[0]
 
-                                new_contact = Contact(id, combine[i][0].GetName(),pc0_id ,c[0].GetName(),c0_id)
-                                new_contact.add(combine[i][1].GetName(),pc1_id, c[1].GetName(),c1_id)
-                                self.contacts[str(id)]=(new_contact)
+                                new_contact = ContactItem(
+                                    id, combine[i][0].GetName(), pc0_id, c[0].GetName(), c0_id)
+                                new_contact.add(
+                                    combine[i][1].GetName(), pc1_id, c[1].GetName(), c1_id)
+                                self.contacts[str(id)] = (new_contact)
 
             msg_cont = "nb contacts : " + str(num_cont)
-            QMessageBox.information(None, "Information", msg_cont, QMessageBox.Ok)
+            QMessageBox.information(
+                None, "Information", msg_cont, QMessageBox.Ok)
 
         if salome.sg.hasDesktop():
             salome.sg.updateObjBrowser()
