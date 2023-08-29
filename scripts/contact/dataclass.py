@@ -5,6 +5,7 @@
 # Version: 28/08/2023
 
 import re
+import json
 import salome
 import GEOM
 from salome.geom import geomBuilder, geomtools
@@ -80,6 +81,10 @@ class ContactPair():
     - create the physical group
     - create the group gap
     - create the group items
+
+    TODO: 
+    - customize the to_dict method depending of the type of contact.
+    - if not yet created, create a physical group on the master for bonded and sliding contact.  
     """
 
     Geompy = geomBuilder.New()
@@ -124,7 +129,6 @@ class ContactPair():
         self.completed = False  # contact completed: both part and surface are defined
 
     def __del__(self):
-
         # update ids at instance destruction
         if self.id_instance in ContactPair.ids_used:
             ContactPair.ids_used.remove(self.id_instance)
@@ -276,6 +280,7 @@ class ContactManagement():
     - manage visibility from study inputs id
     - hide/show master and slave from study inputs id
 
+    TODO: check if the contact group is already created
     """
 
     # get the geom builder
@@ -409,6 +414,10 @@ class ContactManagement():
                     salome.sg.Erase(id)
                 break
 
-
+    # export contact pairs to list
+    def export(self,file):
+        pairs_list = [pairs.to_dict() for pairs in self._contacts]
+        json.dump(pairs_list, file, indent=4)
+        
     
 
