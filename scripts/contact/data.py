@@ -72,7 +72,6 @@ class ContactItem():
     def get_parent_index(self):
         return self.parent.GetSubShapeIndices()[0]
     
-    
 class ContactPair():
     """
     Class for contact pair
@@ -278,13 +277,17 @@ class ContactManagement():
 
     responsability:
     - create contact groups from tree
-    - create contact groups from autotools
-    - create contact groups manually
+    - create contact groups from geometry selection
+    - create contact groups from manually selection
     - deletion of contact groups from study inputs id
     - manage visibility from study inputs id
     - hide/show master and slave from study inputs id
+    - export contact groups to list
 
-    TODO: check if the contact group is already created
+    - @creation TODO:
+                - check if contact pairs already exist
+                - swap master and slave if necessary
+
     """
 
     # get the geom builder

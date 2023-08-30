@@ -236,7 +236,7 @@ class ParseShapesIntersection():
     Shape_allowed = ['PLANE','PLANAR', 'CYLINDER', 'CYLINDER2D', 'SPHERE','SHERE2D', 'CONE','CONE2D', 'TORUS']
 
     def __init__(self):
-        pass
+        self.Coincidence = ShapeCoincidence()
         
     def _parse_for_allow_subshapes(self, subshape_list):
         subshapes=list()
@@ -260,8 +260,7 @@ class ParseShapesIntersection():
         """
         Get the intersection between two shapes
         """
-        Coincidence= ShapeCoincidence()
-        Coincidence.gap = gap
+        self.Coincidence.gap = gap
         candidates = list()
 
         try:
@@ -286,7 +285,7 @@ class ParseShapesIntersection():
 
                     if connected:
                         # check for shape coincidence
-                        if Coincidence.are_coincident(c[0], c[1]):
+                        if self.Coincidence.are_coincident(c[0], c[1]):
                             candidates.append((c[0],c[1]))
 
                         else:
