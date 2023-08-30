@@ -69,6 +69,10 @@ class ContactItem():
     def get_indices(self):
         return [shape.GetSubShapeIndices()[0] for shape in self.shapes]
     
+    def get_parent_index(self):
+        return self.parent.GetSubShapeIndices()[0]
+    
+    
 class ContactPair():
     """
     Class for contact pair
@@ -121,7 +125,7 @@ class ContactPair():
         ContactPair.ids_used.add(self.id_instance)
         ContactPair.ids_counter += 1
 
-        self.items = [] # GEOM objects
+        self.items = [] # ContactItem objects
         self.groups = [] # GEOM objects
         self.type = "BONDED"  # bonded, sliding, separation
         self.master = 0  # master number as surface index
@@ -370,6 +374,18 @@ class ContactManagement():
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 return pairs
+            
+    # get existing contact pairs
+    def get_existing_pairs_indices(self):
+        indices_list = []
+        for pairs in self._contacts:
+            if pairs.is_completed():
+                indices=dict(shapes=[],subshapes=[])
+                for items in pairs:
+                    indices.shapes.append(items.get_parent_index())
+                    items.subshapes.append(items.get_indices())
+                indices_list.append(indices)
+        return indices_list
 
     # delete contact pairs from study inputs id
     def delete(self, id):
