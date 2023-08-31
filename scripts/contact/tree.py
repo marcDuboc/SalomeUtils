@@ -37,7 +37,7 @@ class Tree:
     def __init__(self) -> None:
         self.root = '0:1:1'
         self.objects = None
-        self.contact_pattern = re.compile(r"^_C\d{1,4}[A-D][MS]$")
+        self.contact_pattern = re.compile(r"^_C[A-D]\d{1,4}[MS]$")
     
     def get_objects(self, compound_id='0:1:1' , component=None):
         """
@@ -75,7 +75,8 @@ class Tree:
     
     def parse_for_contact(self):
         """
-        return a dict of contact objects
+        return a dict of contact objects such as {name:{master:obj, slave:obj}}}
+        master and slave are defined by the suffix M|S
         """
         pattern = self.contact_pattern
         
@@ -90,13 +91,15 @@ class Tree:
         for contact in contacts:
             name = contact.name[:-1]
             if name not in contacts_by_name:
-                contacts_by_name[name] = list()
-            contacts_by_name[name].append(contact)
-        
-        # sort contacts by id
-        for name in contacts_by_name:
-            contacts_by_name[name].sort(key=lambda x: x.id[-1])
+                contacts_by_name[name] = dict(master=None,slave=None)
+            if contact.name[-1] == 'M':
+                contacts_by_name[name]['master'] = contact.obj
+            elif contact.name[-1] == 'S':
+                contacts_by_name[name]['slave'] = contact.obj
 
+        # sort the dict by id = int(name[3:])
+        contacts_by_name = dict(sorted(contacts_by_name.items(), key=lambda item: int(item[0][3:])))
+        
         return contacts_by_name
         
 

@@ -201,10 +201,12 @@ class ContactGUI(QWidget):
         self.table_view.setItemDelegateForColumn(2, self.hideShowItem)
 
         # select root component
-        self.l_root = QLabel("Root component: ", self)
+        self.l_root = QLabel("Root compound: ", self)
         self.lb_root = QLineEdit()
+        self.lb_root.setReadOnly(True)
+        self.lb_root.setText("Please select a compound")
         self.bt_root = QPushButton()
-        self.bt_root.setText("Load compound")
+        self.bt_root.setText("Load")
         self.bt_root.clicked.connect(self.emit_load_compound)
 
         btnOK = QPushButton('OK')

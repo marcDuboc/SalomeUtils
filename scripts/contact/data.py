@@ -323,7 +323,13 @@ class ContactManagement():
 
     # create the contact group from the tree. Run once at script launch 
     # the naming convention is _C<type><id><MS>   
-    def create_from_tree(self, master_grp, slave_grp, id):
+    # contact_from_tree is a dict with the following structure: {id: {master:GEOM_Obj, slave:GEOM_Obj}}
+    # id is extracted from the name of the dict keys name
+
+    def create_from_tree(self, contact_from_tree:dict()):
+        keys = contact_from_tree.keys()
+        id=int(keys[0][3:])
+        
         cp = ContactPair(id)
         
         # get the shapes from the group
@@ -373,7 +379,7 @@ class ContactManagement():
             ContactPair.Gst.eraseShapeByEntry(id)
 
     # get contact pairs
-    def get_pairs(self,id):
+    def get_pair(self,id):
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 return pairs

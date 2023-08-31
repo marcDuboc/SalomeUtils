@@ -51,14 +51,44 @@ class ContactAuto(QObject):
         super(ContactAuto, self).__init__()
 
         self.Gui = ContactGUI()
+        self.Tree = Tree()
+        self.Contact = ContactManagement()
+
         self.compound_selected.connect(self.Gui.on_compound_selected)
         self.Gui.load_compound.connect(self.select_compound)
 
     @pyqtSlot()
     def select_compound(self):
-        self.compound_selected.emit("Example")
+        selCount = salome.sg.SelectedCount()
+        if selCount == 0:
+            self.compound_selected.emit("No compound selected!")
+            return
+        elif selCount > 1:
+            self.compound_selected.emit("Select only one compound!")
+            return
+        else:
+            id = salome.sg.getSelected(0)
+            name = salome.IDToObject(id).GetName()
+            self.compound_selected.emit(name+ '\t'+ id)
 
+            # parse for existing contacts
+            self.Tree.get_objects(id)
+            self.Tree.parse_for_contact()
 
+            # add existing contacts to contactManager
+            contacts = self.Tree.contacts
+            for _,v in contacts.items():
+                # get the id of the contact
+                v[0]
+                self.Contact.create_from_tree(v[0],v[1])
+
+            # update table
+            self.contact_pairs_to_tabelmodel(self.Contact.get_pairs())
+    
+    def contact_pairs_to_tabelmodel(self, contact_pairs:list()):
+        model=[]
+
+            
 contact_auto_instance = ContactAuto()
 
 d = QDockWidget()
