@@ -98,6 +98,10 @@ class Tree:
                 contacts_by_name[name]['slave'] = contact.obj
 
         # sort the dict by id = int(name[3:])
+        #add the id to the dict
+        for name in contacts_by_name:
+            contacts_by_name[name]['id'] = int(name[3:])
+
         contacts_by_name = dict(sorted(contacts_by_name.items(), key=lambda item: int(item[0][3:])))
         
         return contacts_by_name

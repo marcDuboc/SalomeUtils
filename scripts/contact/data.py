@@ -130,6 +130,9 @@ class ContactPair():
         self.master = 0  # master number as surface index
         self.gap = None  # gap value as float
         self.completed = False  # contact completed: both part and surface are defined
+        type_str = ContactPair.type_dict[self.type]
+        self.name='_C'+type_str+str(self.id_instance)
+        self.visible = True
 
     def __del__(self):
         # update ids at instance destruction
@@ -219,9 +222,13 @@ class ContactPair():
     def set_type(self, type):
         if type in self.type_dict.keys():
             self.type = type
+
+            type_str=ContactPair.type_dict[self.type]
+            self.name = '_C'+type_str+str(self.id_instance)
+
             for i in range(len(self.groups)):
                 p_name = self.groups[i].GetName()
-                n_name = p_name[:-2]+self.type_dict[type]+p_name[-1]
+                n_name = self.name+p_name[-1]
                 self.groups[i].SetName(n_name)
                 self._set_study_name(self.groups[i], n_name)
         else:
@@ -327,41 +334,41 @@ class ContactManagement():
     # id is extracted from the name of the dict keys name
 
     def create_from_tree(self, contact_from_tree:dict()):
-        keys = contact_from_tree.keys()
-        id=int(keys[0][3:])
-        
-        cp = ContactPair(id)
-        
-        # get the shapes from the group
-        shapes_1 = self._get_subshape_from_group(master_grp)
-        shapes_2 = self._get_subshape_from_group(slave_grp)
+        for k,v in contact_from_tree.items():
+            #get the id from the name
+            id=v['id']
 
-        ci1 = ContactItem(shapes_1.pop(0))
-        for shape in shapes_1:
-            ci1.add_shape(shape)
+            cp = ContactPair(id)
+            cp.name = k
+            # extract the type from the name
+            type = k[2]
+            reversed_dict = {v: k for k, v in ContactPair.type_dict.items()}
+            cp.type = reversed_dict[type]
 
-        ci2 = ContactItem(shapes_2.pop(0))
-        for shape in shapes_2:
-            ci2.add_shape(shape)
+            # get the shapes from the group
+            shapes_1 = self._get_subshape_from_group(v['master'])
+            shapes_2 = self._get_subshape_from_group(v['slave'])
 
-        cp.groups=[master_grp,slave_grp]
+            ci1 = ContactItem(shapes_1.pop(0))
+            for shape in shapes_1:
+                ci1.add_shape(shape)
 
-        cp.items=[ci1,ci2]
+            ci2 = ContactItem(shapes_2.pop(0))
+            for shape in shapes_2:
+                ci2.add_shape(shape)
 
-        cp.completed = True
-        cp.master = 0
+            cp.groups=[v['master'],v['slave']]
 
-        # extract the type from the name
-        name = master_grp.GetName()
-        type = name[2]
-        reversed_dict = {v: k for k, v in ContactPair.type_dict.items()}
-        cp.type = reversed_dict[type]
+            cp.items=[ci1,ci2]
 
-        cp._reset_name_master_slave()
-        self._contacts.append(cp)
+            cp.completed = True
+            cp.master = 0
 
-        # show the group
-        self.show(cp.id_instance)
+            cp._reset_name_master_slave()
+            self._contacts.append(cp)
+
+            # show the group
+            self.show(cp.id_instance)
 
     # create contact manually by selecting 2 groups. the original groups are deleted. New group are created using contactPair class. 
     def create_from_groups(self, group_1_id:str, group_2_id:str):
@@ -378,6 +385,20 @@ class ContactManagement():
             ContactPair.Gst.removeFromStudy(id)
             ContactPair.Gst.eraseShapeByEntry(id)
 
+    def get_all_pairs(self):
+        return self._contacts
+
+    def to_table_model(self):
+        model=[]
+        for pair in self._contacts:
+            id = pair.id_instance
+            name = pair.name
+            type = pair.type
+            visible = pair.visible
+            model.append(dict(id=id, name=name, type=type, visible=visible))
+
+        return model
+    
     # get contact pairs
     def get_pair(self,id):
         for pairs in self._contacts:

@@ -73,22 +73,16 @@ class ContactAuto(QObject):
 
             # parse for existing contacts
             self.Tree.get_objects(id)
-            self.Tree.parse_for_contact()
+            existing_contact = self.Tree.parse_for_contact()
 
             # add existing contacts to contactManager
-            contacts = self.Tree.contacts
-            for _,v in contacts.items():
-                # get the id of the contact
-                v[0]
-                self.Contact.create_from_tree(v[0],v[1])
+            self.Contact.create_from_tree(existing_contact)
 
             # update table
-            self.contact_pairs_to_tabelmodel(self.Contact.get_pairs())
+            print(self.Contact.to_table_model())
     
-    def contact_pairs_to_tabelmodel(self, contact_pairs:list()):
-        model=[]
 
-            
+
 contact_auto_instance = ContactAuto()
 
 d = QDockWidget()
