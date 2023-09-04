@@ -180,9 +180,6 @@ class ContactPair():
     master_color=salome.SALOMEDS.Color(1,0,0)
     slave_color=salome.SALOMEDS.Color(0,0,1)
 
-
-
-
     def __init__(self, id=None):
         if id in ContactPair.ids_available:
             self.id_instance=id
@@ -406,13 +403,9 @@ class ContactManagement():
         return Geompy.SubShapes(main_shape, indices)
     
     # method to be used with autotools
-    def create_from_intersection(self, shape_1_sid:str, sub_1:list(), shape_2_sid:str, sub_2:list()):
-
-        c1 = GroupItem()
-        c1.create(shape_1_sid, sub_1)
-
-        c2 = GroupItem()
-        c2.create(shape_2_sid, sub_2)
+    def create_from_intersection(self, group_1:GroupItem, group_2:GroupItem):
+        c1 = group_1
+        c2 = group_2
 
         group_pairs = ContactPair()
         group_pairs.add_items(c1)
