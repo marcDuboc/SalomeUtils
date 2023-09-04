@@ -5,15 +5,18 @@
 # Version: 28/08/2023
 
 import os
+import time
 import inspect
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout, QComboBox, QItemDelegate, QLabel, QLineEdit,QTableView
-from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout, QComboBox, QItemDelegate, QLabel, QLineEdit,QTableView,QStyle 
+from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal, pyqtSlot, QEvent
 
 
 root_path= os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 img_path = os.path.join(root_path, 'img')
 
+
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class Controler():
     def __init__(self):
@@ -50,33 +53,64 @@ class DeleteDelegate(QItemDelegate):
         index.model().removeRow(index.row())
 
 class SwapDelegate(QItemDelegate):
-    def createEditor(self, parent, option, index):
-        editor = QPushButton("Swap",parent)
-        editor.clicked.connect(lambda: self.setModelData(index))
-        return editor
+    swap = pyqtSignal(int)  # Signal avec l'ID de la ligne en argument
 
-    def setModelData(self,editor, model,index):
-        # swap value 0 <-> 1 in the model data
-        if index.model().data(index, Qt.EditRole) == 0:
-            model.setData(index, 1, Qt.EditRole)
-        else:
-            model.setData(index, 0, Qt.EditRole) 
+    def __init__(self, *args, **kwargs):
+        super(SwapDelegate, self).__init__(*args, **kwargs)
+
+    def paint(self, painter, option, index):
+        if option.state & QStyle.State_Selected:
+            painter.fillRect(option.rect, QColor.fromRgb(200, 200, 200))
+    
+        if index.isValid():
+            icon = QIcon(os.path.join(img_path,'swap.png'))
+            icon.paint(painter, option.rect, Qt.AlignCenter)
+
+    def editorEvent(self, event, model, option, index):
+        if event.type() == QEvent.MouseButtonRelease:
+            # get the id from the data model
+            row= index.row()
+            value= model.data(model.index(row,0), Qt.DisplayRole)
+            self.swap.emit(value)
+            return True
+        
+        return super(SwapDelegate, self).editorEvent(event, model, option, index)
 
 class HideShowDelegate(QItemDelegate):
-    def createEditor(self, parent, option, index):
-        editor = QPushButton("Hide/Show",parent)
-        editor.clicked.connect(lambda: self.setModelData(index))
-        return editor
+    hideShow = pyqtSignal(int,bool)
 
-    def setModelData(self, editor, model,index):
-        # swap value 0 <-> 1 in the model data
-        if index.model().data(index, Qt.EditRole) == 0:
-            model.setData(index, 1, Qt.EditRole)
-            print('set to 1')
+    def __init__(self, *args, **kwargs):
+        super(HideShowDelegate, self).__init__(*args, **kwargs)
 
-        else:
-            model.setData(index, 0, Qt.EditRole)
-            print('set to 0')
+    def paint(self, painter, option, index):
+        if option.state & QStyle.State_Selected:
+            painter.fillRect(option.rect, QColor.fromRgb(200, 200, 200, 255))
+    
+        if index.isValid():
+            if index.model().data(index, Qt.DisplayRole) == False:
+                icon = QIcon(os.path.join(img_path,'hide.png'))
+            else:
+                icon = QIcon(os.path.join(img_path,'display.png'))
+            icon.paint(painter, option.rect, Qt.AlignCenter)
+
+    def editorEvent(self, event, model, option, index):
+        if event.type() == QEvent.MouseButtonRelease:
+            # Émettez le signal avec l'ID de la ligne comme argument
+            id = index.model().data(index.siblingAtColumn(0), Qt.DisplayRole)
+            value = model.data(index, Qt.DisplayRole)
+
+            if value == True:
+                self.hideShow.emit(id,False)
+                # set data to table model
+                model.setData(index, False, Qt.EditRole)
+
+            else:
+                self.hideShow.emit(id,True)
+                # set data to table model.
+                model.setData(index, True, Qt.EditRole)
+
+            return True
+        return super(HideShowDelegate, self).editorEvent(event, model, option, index)
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data):
@@ -92,44 +126,59 @@ class TableModel(QAbstractTableModel):
     def data(self, index, role=Qt.DisplayRole):
         # display data
         if role == Qt.DisplayRole:
-            print('Display role:', index.row(), index.column())
             try:
                 return self._data[index.row()][index.column()]
             except IndexError:
                 return ''
-            
+
         # background color
         if role == Qt.BackgroundRole:
-            if index.column() == 4:
-                return QtGui.QColor(Qt.gray)
+            if index.column() == 5:
+                return QColor(Qt.gray)
             
         if role == Qt.DecorationRole:
-            if index.column() == 4:
-                return QtGui.QIcon(os.path.join(img_path,'delete.png'))
-            elif index.column() == 3:
-                return QtGui.QIcon(os.path.join(img_path,'swap.png'))
-            elif index.column() == 2:
-                # if value is 0
-                if self._data[index.row()][index.column()] == 0:
-                    return QtGui.QIcon(os.path.join(img_path,'hide.png'))
-                else:
-                    return QtGui.QIcon(os.path.join(img_path,'display.png'))
-            
+            if index.column() == 5:
+                return QIcon(os.path.join(img_path,'delete.png'))
 
-    def setData(self, index, value, role=Qt.EditRole):
-        print(self._data)		
+    def setData(self, index, value, role=Qt.EditRole):		
         if role in (Qt.DisplayRole, Qt.EditRole):
-            print('Edit role:', index.row(), index.column())
+            with open(DEBUG_FILE, 'a') as f:
+                f.write(time.ctime())
+                f.write('\t')
+                f.write('setData'+'\t')
+                f.write(str(index.row())+'\t')
+                f.write(str(index.column())+'\t')
+                f.write(str(value))
+                f.write('\n')
+
             # if value is blank
-            if not value:
-                return False	
+            if value in ('',' '):
+                return False
+
             self._data[index.row()][index.column()] = value
-            self.dataChanged.emit(index, index)
+            with open(DEBUG_FILE, 'a') as f:
+                f.write(time.ctime())
+                f.write('\t')
+                f.write(str(self._data)+'\t')
+                f.write('\n')
+
+            #self.dataChanged.emit(index, index)
+
+
+
         return True
         
     def flags(self, index):
-        return super().flags(index) | Qt.ItemIsEditable
+        default_flags = super(TableModel, self).flags(index)
+        if index.column() in (0,1,3,4):  
+            return default_flags & ~Qt.ItemIsEditable
+        return default_flags | Qt.ItemIsEditable
     
+    def update_database(self, index):
+        print('update database', index.row(), index.column())
+        # update database
+        #self._data[row][0] = 'updated'
+        #self.dataChanged.emit(index, index)
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         # header data
@@ -179,11 +228,17 @@ class ContactGUI(QWidget):
 
     # define custom signals
     load_compound = pyqtSignal()
+    closing = pyqtSignal()
 
     def __init__(self):
         super(ContactGUI, self).__init__()
-        self._data = [['id1', 'BONDED', 1, 1,''],['id2', 'BONDED', 0, 1,''],['id3', 'BONDED', 1, 0,''],]
-        self.init_UI()        
+        self._data = []
+        self.init_UI()       
+
+    def closeEvent(self, event):
+        print("Fermeture de la fenêtre, suppression des instances...")
+        self.closing.emit()
+        event.accept()  # Ferme la fenêtre """
 
     def init_UI(self):
         # Table model
@@ -194,11 +249,10 @@ class ContactGUI(QWidget):
         self.hideShowItem = HideShowDelegate()
 
         self.table_view = QTableView(self)
-        self.table_view.setModel(self.model)
-        self.table_view.setItemDelegateForColumn(1, self.typeItem)
+        self.table_view.setItemDelegateForColumn(2, self.typeItem)
         self.table_view.setItemDelegateForColumn(5, self.deleteItem)
-        self.table_view.setItemDelegateForColumn(3, self.swapItem)
-        self.table_view.setItemDelegateForColumn(2, self.hideShowItem)
+        self.table_view.setItemDelegateForColumn(4, self.swapItem)
+        self.table_view.setItemDelegateForColumn(3, self.hideShowItem)
 
         # select root component
         self.l_root = QLabel("Root compound: ", self)
@@ -234,8 +288,14 @@ class ContactGUI(QWidget):
         self.load_compound.emit()
 
     def set_data(self, data):
-        self.model = TableModel(data)
-        self.table_view.setModel(self.model)    
+        print('set data \t',data)
+        # add 2 extra columns for the button (delete)
+        for d in range(len(data)):
+            data[d].append('')
+            data[d].append('')
+        if len(data) > 0:
+            self.model = TableModel(data)
+            self.table_view.setModel(self.model)    
 
     # This method will be called when the button is clicked
     def openSecondaryWindow(self):
@@ -247,5 +307,7 @@ class ContactGUI(QWidget):
     def receiveData(self, data):
         # This method will be called when the dataReady signal is emitted
         print(f"Received data: {data}")
-        # Update your model or GUI here        
+        # Update your model or GUI here  
+        # 
+          
     

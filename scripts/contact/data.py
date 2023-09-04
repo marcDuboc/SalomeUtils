@@ -5,13 +5,70 @@
 # Version: 28/08/2023
 
 import re
+import time
 import json
+from collections import OrderedDict
 import salome
 import GEOM
 from salome.geom import geomBuilder, geomtools
 from salome.kernel.studyedit import getStudyEditor
 
+Geompy = geomBuilder.New()
+StudyEditor = getStudyEditor()
+Gst = geomtools.GeomStudyTools(StudyEditor)
+Gg = salome.ImportComponentGUI("GEOM")
+Builder = salome.myStudy.NewBuilder()
 
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+
+class GroupItem():
+    Geompy = geomBuilder.New()
+    shape_allowable_type = (Geompy.ShapeType["FACE"], Geompy.ShapeType["EDGE"], Geompy.ShapeType["VERTEX"])
+
+    def __init__(self):
+        self.type = None
+        self.shape_sid = None
+        self.subshapes_indices = []
+
+    def __eq__(self, __value: object) -> bool:
+        shape=salome.IDToObject(self.shape_sid)
+        __shape=salome.IDToObject(__value.shape_sid)
+        if not shape.IsSame(__shape):
+            return False
+        else:
+            for indices in self.subshapes_indices:
+                if indices not in __value.subshapes_indices:
+                    return False
+            return True
+        
+
+    """def _are_allowed(self, shubshape_indice):
+        #Check if the shape and subshape topology are valid
+        type = shape.GetShapeType()._v
+        if type not in ContactItem.shape_allowable_type:
+            raise ValueError("Shape type {} is not valid. Allowable type are: {}".format(type,ContactItem.shape_allowable_type))
+        self.type = type
+        return True
+    """
+
+    def create(self, shape_sid:str, subshape_indices:list):
+        self.shape_sid = shape_sid
+        self.subshapes_indices = subshape_indices
+
+    def create_from_group(self, group_sid:str):
+        obj = salome.IDToObject(group_sid)
+        parent = obj.GetMainShape()
+        subshapes_indices = obj.GetSubShapeIndices()
+        sub = Geompy.GetSubShape(parent, subshapes_indices)
+        if type(sub) == list:
+            sub = sub[0]
+        self.type = sub.GetShapeType()._v
+        self.shape_sid = parent.GetStudyEntry()
+        self.subshapes_indices = subshapes_indices
+
+    def get_parent(self):
+        return salome.IDToObject(self.shapes_sid)
+        
 class ContactItem():
 
     # get the geom builder
@@ -20,24 +77,29 @@ class ContactItem():
     # allowable topology
     shape_allowable_type = (Geompy.ShapeType["FACE"], Geompy.ShapeType["EDGE"], Geompy.ShapeType["VERTEX"])
 
-    def __init__(self, shape):
-        self.shapes = [] # GEOM object
+    def __init__(self, shape_id:str):
+        self.shapes_ids = [] # GEOM object => to id
         self.type = None    # string
-        self.parent = None    # GEOM object
+        self.parent_id = None    # GEOM object => to id
+
+        #egt the geometry object
+        shape = salome.IDToObject(shape_id)
 
         # check if shape and subshape are allowed
         if self._are_allowed(shape) :
-            self.shapes.append(shape)
+            self.shapes_ids.append(shape_id)
 
         # check working at coumpound level
         if not shape.IsMainShape() :
-            self.parent = shape.GetMainShape()
+            self.parent_id = shape.GetMainShape().GetStudyEntry()
+
         else:
             raise ValueError("Contact must be defined at compound level")
 
-    def add_shape(self, shape):
+    def add_shape(self, shape_id:str):
+        shape = salome.IDToObject(shape_id)
         if self._are_same_parent(shape) and self._are_same_type(shape):
-            self.shapes.append(shape)
+            self.shapes_ids.append(shape_id)
         else:
             raise ValueError("Shape and subshape are not valid")
 
@@ -67,10 +129,11 @@ class ContactItem():
         return area
     
     def get_indices(self):
-        return [shape.GetSubShapeIndices()[0] for shape in self.shapes]
+        shapes = [salome.IDToObject(id) for id in self.shapes_ids]
+        return [shape.GetSubShapeIndices()[0] for shape in shapes]
     
     def get_parent_index(self):
-        return self.parent.GetSubShapeIndices()[0]
+        return self.parent_id
     
 class ContactPair():
     """
@@ -90,16 +153,13 @@ class ContactPair():
     - if not yet created, create a physical group on the master for bonded and sliding contact.  
     """
 
-    Geompy = geomBuilder.New()
-    StudyEditor = getStudyEditor()
-    Gst = geomtools.GeomStudyTools(StudyEditor)
-    Gg = salome.ImportComponentGUI("GEOM")
+
 
     # get the study builder
-    Builder = salome.myStudy.NewBuilder()
+    
 
     # pattern for subshape name
-    subshape_name_pattern = re.compile(r"^_C\d{1,4}[A-D][MS]$")
+    subshape_name_pattern = re.compile(r"^_C[A-D]\d{1,4}[MS]$")
 
     # ids management
     ids_counter = 0
@@ -113,6 +173,9 @@ class ContactPair():
     master_color=salome.SALOMEDS.Color(1,0,0)
     slave_color=salome.SALOMEDS.Color(0,0,1)
 
+
+
+
     def __init__(self, id=None):
         if id in ContactPair.ids_available:
             self.id_instance=id
@@ -125,7 +188,7 @@ class ContactPair():
         ContactPair.ids_counter += 1
 
         self.items = [] # ContactItem objects
-        self.groups = [] # GEOM objects
+        self.groups_sid = [] # group study entry
         self.type = "BONDED"  # bonded, sliding, separation
         self.master = 0  # master number as surface index
         self.gap = None  # gap value as float
@@ -135,16 +198,19 @@ class ContactPair():
         self.visible = True
 
     def __del__(self):
-        # update ids at instance destruction
+        self.groups_sid.clear()
+        for item in self.items:
+            del item
+
+    def delete(self):
+        for grp in self.groups_sid:
+            Gst.removeFromStudy(grp)
+            Gst.eraseShapeByEntry(grp)
+
         if self.id_instance in ContactPair.ids_used:
             ContactPair.ids_used.remove(self.id_instance)
             ContactPair.ids_available.append(self.id_instance)
             ContactPair.ids_available.sort()
-
-    def delete(self):
-        for grp in self.groups:
-            ContactPair.Gst.removeFromStudy(grp.GetStudyEntry())
-            ContactPair.Gst.eraseShapeByEntry(grp.GetStudyEntry())
 
     def to_dict(self):
         return {
@@ -155,14 +221,17 @@ class ContactPair():
             "gap": self.gap,
             "completed": self.completed
         }
-    
+
+    def to_table_model(self):
+        return OrderedDict(id=self.id_instance, name=self.name, type=self.type, visible=self.visible)
+
     def __str__(self):
         return str(self.to_dict())
 
     def __repr__(self):
         return str(self.to_dict())
     
-    def _create_physical_group(self,contact_item: ContactItem):
+    def _create_physical_group(self,group_item: GroupItem):
         common_name = '_C' + str(self.id_instance)
         c_type = self.type_dict[self.type]
 
@@ -176,65 +245,77 @@ class ContactPair():
 
         name = common_name + c_type + suffix
 
-        group = ContactPair.Geompy.CreateGroup(contact_item.parent, contact_item.type)
-        indices = contact_item.get_indices()
-        ContactPair.Geompy.AddObject(group, indices.pop(0))
-        if len(indices) > 0:
-            ContactPair.Geompy.UnionIDs(group,indices)
-        ojb_group = salome.IDToObject(ContactPair.Geompy.addToStudyInFather(contact_item.parent, group, name))
-        self.groups.append(ojb_group)
-        self.groups[-1].SetColor(color)
+        group = Geompy.CreateGroup(group_item.get_parent(), group_item.type)
+        indices = group_item.subshapes_indices
 
+        Geompy.AddObject(group, indices.pop(0))
+        if len(indices) > 0:
+            Geompy.UnionIDs(group,indices)
+        group_sid = Geompy.addToStudyInFather(group_item.get_parent(), group, name)
+        self.groups_sid.append(group_sid)
+
+        # set the color
+        salome.IDToObject(group_sid).SetColor(color)
+        
         if salome.sg.hasDesktop():
             salome.sg.updateObjBrowser()
 
     def _reset_name_master_slave(self):
         self.master = 0
-        common_name = '_C' + str(self.id_instance)
         c_type = self.type_dict[self.type]
+        common_name = '_C' + c_type + str(self.id_instance)
+        
         suffix = ['M','S']
         colors = (self.master_color, self.slave_color)
         
-        for i in range(len(self.groups)):
-            name = common_name + c_type + suffix[i]
-            self.groups[i].SetName(name)
-            self._set_study_name(self.groups[i], name)
-            self.groups[i].SetColor(colors[i])
-            ContactPair.Gg.setDisplayMode(self.groups[i].GetStudyEntry(),2)
+        for i in range(len(self.groups_sid)):
+            name = common_name + suffix[i]
+            group = salome.IDToObject(self.groups_sid[i])
+            group.SetName(name)
+            group.SetColor(colors[i])
+            self._set_study_name(self.groups_sid[i], name)
+            Gg.setDisplayMode(self.groups_sid[i],2)
         
         if salome.sg.hasDesktop():
             salome.sg.updateObjBrowser()
 
-    def _set_study_name(self, obj, name):
-        sobj=salome.ObjectToSObject(obj)
-        sobjattr = ContactPair.Builder.FindOrCreateAttribute(sobj, "AttributeName")
+    def _set_study_name(self, obj_sid:str, name:str):
+        sobj = salome.IDToSObject(obj_sid)
+        sobjattr = Builder.FindOrCreateAttribute(sobj, "AttributeName")
         sobjattr.SetValue(name)
 
     def get_parents(self):
-        return [x.parent for x in self.items]
+        return (salome.IDToObject(x.shape_sid) for x in self.items)
+    
+    def get_parents_sid(self):
+        return (x.shape_sid for x in self.items)
     
     def get_groups(self):
-        return self.groups
+        return (salome.IDToObejct(group) for group in self.groups_sid)
+    
+    def get_groups_sid(self):
+        return self.groups_sid
     
     def get_group_names(self):
-        return (group.GetName() for group in self.groups)
+        return (salome.IDToObejct(group).GetName() for group in self.groups_sid)
 
-    def set_type(self, type):
+    def set_type(self, type:str):
         if type in self.type_dict.keys():
             self.type = type
 
             type_str=ContactPair.type_dict[self.type]
             self.name = '_C'+type_str+str(self.id_instance)
 
-            for i in range(len(self.groups)):
-                p_name = self.groups[i].GetName()
+            for i in range(len(self.groups_sid)):
+                p_name = salome.IDToObject(self.groups_sid[i]).GetName()
                 n_name = self.name+p_name[-1]
-                self.groups[i].SetName(n_name)
-                self._set_study_name(self.groups[i], n_name)
+                group = salome.IDToObject(self.groups_sid[i])
+                group.SetName(n_name)
+                self._set_study_name(self.groups_sid[i], n_name)
         else:
-            raise ValueError("Type not available. Available types are: {}".format(self.get_type_available()))
+            raise ValueError("Type not available. Available types are: {}".format(list(self.type_dict.keys())))
     
-    def set_gap(self, gap):
+    def set_gap(self, gap:float):
         if gap >= 0:
             self.gap = gap
         else:
@@ -254,13 +335,14 @@ class ContactPair():
                 colors = (self.master_color, self.slave_color)
                 self.master = 0
 
-            for i in range(len(self.groups)):
-                p_name = self.groups[i].GetName()
-                n_name = p_name[:-1]+suffix[i]
-                self.groups[i].SetColor(colors[i])
-                self.groups[i].SetName(n_name)
-                self._set_study_name(self.groups[i], n_name)
-                ContactPair.Gg.setDisplayMode(self.groups[i].GetStudyEntry(),2)
+            for i in range(len(self.groups_sid)):
+                group=salome.IDToObject(self.groups_sid[i])
+                p_name = group.GetName()
+                n_name = p_name[:-1]+suffix[i] 
+                group.SetColor(colors[i])
+                group.SetName(n_name)
+                self._set_study_name(self.groups_sid[i], n_name)
+                Gg.setDisplayMode(self.groups_sid[i],2)
 
             if salome.sg.hasDesktop():
                 salome.sg.updateObjBrowser()
@@ -269,10 +351,10 @@ class ContactPair():
         else:
             raise ValueError("Cannot swap master and slave. Master or slave are not defined")
         
-    def add_items(self, contact_item: ContactItem):
+    def add_items(self, group_item: GroupItem):
         if self.completed == False:
-            self.items.append(contact_item)
-            self._create_physical_group(contact_item)
+            self.items.append(group_item)
+            self._create_physical_group(group_item)
             if len(self.items) > 1:
                 self.completed = True
         else:
@@ -297,36 +379,35 @@ class ContactManagement():
 
     """
 
-    # get the geom builder
-    Geompy = geomBuilder.New()
-    StudyEditor = getStudyEditor()
-    Gst = geomtools.GeomStudyTools(StudyEditor)
-    Gg = salome.ImportComponentGUI("GEOM")
-
     def __init__(self):
         self._contacts = []
 
-    def _get_subshape_from_group(self, group_obj):
+    def __del__(self):
+        for contact in self._contacts:
+            del contact
+
+    def _get_subshape_from_group(self, group_sid:str):
+        group_obj = salome.IDToObject(group_sid)
         indices = group_obj.GetSubShapeIndices()
         main_shape = group_obj.GetMainShape()
-        return ContactManagement.Geompy.SubShapes(main_shape, indices)
+        return Geompy.SubShapes(main_shape, indices)
     
     # method to be used with autotools
-    def create_from_shapes(self, obj_1:list(), obj_2:list()):
-        c1 = ContactItem(obj_1.pop(0))
-        for shape in obj_1:
-            c1.add_shape(shape)
-        c2 = ContactItem(obj_2.pop(0))
-        for shape in obj_2:
-            c2.add_shape(shape)
+    def create_from_subshapes(self, shape_1_sid:str, sub_1:list(), shape_2_sid:str, sub_2:list()):
 
-        group = ContactPair()
-        group.add_items(c1)
-        group.add_items(c2)
-        self._contacts.append(group)
+        c1 = GroupItem()
+        c1.create(shape_1_sid, sub_1)
+
+        c2 = GroupItem()
+        c2.create(shape_2_sid, sub_2)
+
+        group_pairs = ContactPair()
+        group_pairs.add_items(c1)
+        group_pairs.add_items(c2)
+        self._contacts.append(group_pairs)
 
         # show the group
-        self.show(group.id_instance)
+        self.show(group_pairs.id_instance)
 
     # create the contact group from the tree. Run once at script launch 
     # the naming convention is _C<type><id><MS>   
@@ -336,28 +417,23 @@ class ContactManagement():
     def create_from_tree(self, contact_from_tree:dict()):
         for k,v in contact_from_tree.items():
             #get the id from the name
-            id=v['id']
+            id=v['pair_id']
 
             cp = ContactPair(id)
+
             cp.name = k
             # extract the type from the name
             type = k[2]
             reversed_dict = {v: k for k, v in ContactPair.type_dict.items()}
             cp.type = reversed_dict[type]
 
-            # get the shapes from the group
-            shapes_1 = self._get_subshape_from_group(v['master'])
-            shapes_2 = self._get_subshape_from_group(v['slave'])
+            ci1 = GroupItem()
+            ci1.create_from_group(v['master'])
 
-            ci1 = ContactItem(shapes_1.pop(0))
-            for shape in shapes_1:
-                ci1.add_shape(shape)
+            ci2 = GroupItem()
+            ci2.create_from_group(v['slave'])
 
-            ci2 = ContactItem(shapes_2.pop(0))
-            for shape in shapes_2:
-                ci2.add_shape(shape)
-
-            cp.groups=[v['master'],v['slave']]
+            cp.groups_sid=[v['master'],v['slave']]
 
             cp.items=[ci1,ci2]
 
@@ -371,19 +447,19 @@ class ContactManagement():
             self.show(cp.id_instance)
 
     # create contact manually by selecting 2 groups. the original groups are deleted. New group are created using contactPair class. 
-    def create_from_groups(self, group_1_id:str, group_2_id:str):
+    def create_from_groups(self, group_1_sid:str, group_2_sid:str):
 
         # get the shapes from the group
-        shapes_1 = self._get_subshape_from_group(salome.IDToObject(group_1_id))
-        shapes_2 = self._get_subshape_from_group(salome.IDToObject(group_2_id))
+        shapes_1 = self._get_subshape_from_group(group_1_sid)
+        shapes_2 = self._get_subshape_from_group(group_2_sid)
 
         # create contact pair
         self.create_from_shapes(shapes_1, shapes_2)
 
         # delete the original groups
-        for id in (group_1_id, group_2_id):
-            ContactPair.Gst.removeFromStudy(id)
-            ContactPair.Gst.eraseShapeByEntry(id)
+        for id in (group_1_sid, group_2_sid):
+            Gst.removeFromStudy(id)
+            Gst.eraseShapeByEntry(id)
 
     def get_all_pairs(self):
         return self._contacts
@@ -391,12 +467,8 @@ class ContactManagement():
     def to_table_model(self):
         model=[]
         for pair in self._contacts:
-            id = pair.id_instance
-            name = pair.name
-            type = pair.type
-            visible = pair.visible
-            model.append(dict(id=id, name=name, type=type, visible=visible))
-
+            d= list(pair.to_table_model().values())
+            model.append(d)
         return model
     
     # get contact pairs
@@ -422,7 +494,7 @@ class ContactManagement():
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 self._contacts.remove(pairs)
-                pairs.delete()
+                del pairs
                 break
         salome.sg.updateObjBrowser()
    
@@ -430,34 +502,28 @@ class ContactManagement():
     def show(self, id, transparency=0.8):
         for pairs in self._contacts:
             if pairs.id_instance == id:
+                pairs.visible = True
+                for sid in pairs.get_groups_sid():
+                    salome.sg.Display(sid)
 
-                groups = pairs.get_groups()
-                groups_id = [g.GetStudyEntry() for g in groups]
-                for id in groups_id:
-                    salome.sg.Display(id)
-
-                parents = pairs.get_parents()
-                parents_id = [p.GetStudyEntry() for p in parents]
-                for id in parents_id:
-                    salome.sg.Display(id)
-                    ContactPair.Gg.setTransparency(id,transparency)
+                parents_sid = pairs.get_parents_sid()
+                for sid in parents_sid:
+                    salome.sg.Display(sid)
+                    Gg.setTransparency(sid,transparency)
                 break
 
     # hide pairs                
     def hide(self, id):
         for pairs in self._contacts:
             if pairs.id_instance == id:
+                groups_sid = pairs.get_groups_sid()
+                for sid in groups_sid:
+                    salome.sg.Erase(sid)
 
-                groups = pairs.get_groups()
-                groups_id = [g.GetStudyEntry() for g in groups]
-                for id in groups_id:
-                    salome.sg.Erase(id)
-
-                parents = pairs.get_parents()
-                parents_id = [p.GetStudyEntry() for p in parents]
-                for id in parents_id:
-                    ContactPair.Gg.setTransparency(id,0)
-                    salome.sg.Erase(id)
+                parents_sid = pairs.get_parents_sid()
+                for sid in parents_sid:
+                    Gg.setTransparency(sid,0)
+                    salome.sg.Erase(sid)
                 break
 
     # export contact pairs to list
@@ -465,5 +531,26 @@ class ContactManagement():
         pairs_list = [pairs.to_dict() for pairs in self._contacts]
         json.dump(pairs_list, file, indent=4)
         
-    
+    # swap master and slave
+    def swap_master_slave_by_id(self,id):
+        for pairs in self._contacts:
+            if pairs.id_instance == id:
+                pairs.swap_master_slave()
+                break
+
+    # hide/show pairs
+    def hideshow_by_id(self,id:int,value:bool):
+        with open(DEBUG_FILE, 'a') as f:
+            msg = "hideshow_by_id: id: {}, value: {}".format(id,value)
+            f.write(time.ctime())
+            f.write(msg)
+            f.write('\n')
+
+        for pairs in self._contacts:
+            if pairs.id_instance == id:
+                if value:
+                    self.show(id)
+                else:
+                    self.hide(id)
+                break
 

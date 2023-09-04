@@ -10,11 +10,13 @@ import sys
 import itertools
 import re
 import json
+import time
 import numpy as np
 import GEOM
 import salome
 from salome.geom import geomBuilder, geomtools
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt
 from PyQt5.QtWidgets import QDockWidget
 
@@ -43,6 +45,7 @@ geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class ContactAuto(QObject):
     compound_selected = pyqtSignal(str)
@@ -56,7 +59,12 @@ class ContactAuto(QObject):
 
         self.compound_selected.connect(self.Gui.on_compound_selected)
         self.Gui.load_compound.connect(self.select_compound)
-
+        
+    def __del__(self):
+        del self.Tree
+        del self.Contact
+        del self.Gui
+              
     @pyqtSlot()
     def select_compound(self):
         selCount = salome.sg.SelectedCount()
@@ -74,24 +82,52 @@ class ContactAuto(QObject):
             # parse for existing contacts
             self.Tree.get_objects(id)
             existing_contact = self.Tree.parse_for_contact()
+            print('existing contact',existing_contact)
 
+            with open(DEBUG_FILE, 'a') as f:
+                f.write(time.ctime())
+                f.write(str(existing_contact))
+                f.write('\n')
+                
             # add existing contacts to contactManager
             self.Contact.create_from_tree(existing_contact)
 
             # update table
-            print(self.Contact.to_table_model())
+            self.Gui.set_data(self.Contact.to_table_model())
+
+            #connect signals
+            self.Gui.swapItem.swap.connect(self.Contact.swap_master_slave_by_id)
+            self.Gui.hideShowItem.hideShow.connect(self.Contact.hideshow_by_id)
+
     
+class MyDockWidget(QDockWidget):
+    widgetClosed = pyqtSignal()
+
+    def closeEvent(self, event):
+        self.widgetClosed.emit()
+        super(MyDockWidget, self).closeEvent(event)
 
 
 contact_auto_instance = ContactAuto()
 
-d = QDockWidget()
+def delete_contact_auto_instance():
+    global contact_auto_instance
+    del contact_auto_instance  # ou toute autre logique de nettoyage
+    print("ContactAuto instance deleted.")
+
+d = MyDockWidget()
 d.setWidget(contact_auto_instance.Gui)
 d.setAttribute(Qt.WA_DeleteOnClose)
-#d.setWindowFlags(d.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
-d.setWindowTitle(" 3D Contacts ")
+d.setWindowFlags(d.windowFlags() | Qt.WindowStaysOnTopHint)
+d.setWindowTitle("3D Contacts")
 d.setGeometry(600, 300, 400, 400)
+
+# Connecter le signal au slot
+d.widgetClosed.connect(delete_contact_auto_instance)
+
 d.show()
+
+
 
 
      

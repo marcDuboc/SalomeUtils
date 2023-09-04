@@ -22,10 +22,9 @@ def tuple_to_id(tuple):
     return ':'.join([str(i) for i in tuple])
 
 class TreeItem():
-    def __init__(self,id:tuple,name:str,geom_obj:object):
+    def __init__(self,id:tuple,name:str):
         self.id = id
         self.name = name
-        self.obj = geom_obj
 
     def parent_id(self):
         return self.id[:-1]
@@ -63,10 +62,9 @@ class Tree:
             test_id = id[:length_compound_id]
 
             if test_id == compound_id:
-                obj = sobj.GetObject()
                 name = sobj.GetName()
                 if name:
-                    item=TreeItem(id,name,obj)
+                    item=TreeItem(id,name)
                     self.objects.append(item)
 
             iter.Next()
@@ -93,14 +91,14 @@ class Tree:
             if name not in contacts_by_name:
                 contacts_by_name[name] = dict(master=None,slave=None)
             if contact.name[-1] == 'M':
-                contacts_by_name[name]['master'] = contact.obj
+                contacts_by_name[name]['master'] = tuple_to_id(contact.id)
             elif contact.name[-1] == 'S':
-                contacts_by_name[name]['slave'] = contact.obj
+                contacts_by_name[name]['slave'] = tuple_to_id(contact.id)
 
         # sort the dict by id = int(name[3:])
-        #add the id to the dict
+        #add the pair_id to the dict
         for name in contacts_by_name:
-            contacts_by_name[name]['id'] = int(name[3:])
+            contacts_by_name[name]['pair_id'] = int(name[3:])
 
         contacts_by_name = dict(sorted(contacts_by_name.items(), key=lambda item: int(item[0][3:])))
         

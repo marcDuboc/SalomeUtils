@@ -1,37 +1,190 @@
-['_C1S', '_C1M']	0	True
-['_C1S', '_C1M']	0	True
-['_C3S', '_C3M']	0	True
-['_C2M', '_C2S']	1	True
-['_C1S', '_C1M']	0	True
-['_C3S', '_C3M']	0	True
-['_C2M', '_C2S']	1	True
-['_C2M', '_C2S']	1	True
-['_C5S', '_C5M']	0	False
-['_C1S', '_C1M']	0	True
-['_C3S', '_C3M']	0	True
-['_C2M', '_C2S']	1	True
-['_C2M', '_C2S']	1	True
-['_C5S', '_C5M']	0	False
-['_C7S', '_C7M']	0	False
-['_C5S', '_C5M']	0	False
-['_C7S', '_C7M']	0	False
-['_C9S', '_C9M']	0	True
-['_C2M', '_C2S']	1	True
-['_C2M', '_C2S']	1	True
-['_C2M', '_C2S']	1	True
-['_C16M', '_C16S']	1	True
-['_C17M', '_C17S']	1	True
-['_C1S', '_C1M']	0	True
-['_C3S', '_C3M']	0	True
-['_C2M', '_C2S']	1	True
-['_C2M', '_C2S']	1	True
-['_C5S', '_C5M']	0	False
-['_C7S', '_C7M']	0	False
-['_C5S', '_C5M']	0	False
-['_C7S', '_C7M']	0	False
-['_C9S', '_C9M']	0	True
-['_C2M', '_C2S']	1	True
-['_C2M', '_C2S']	1	True
-['_C2M', '_C2S']	1	True
-['_C16M', '_C16S']	1	True
-['_C17M', '_C17S']	1	True
+Fri Sep  1 20:23:01 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Fri Sep  1 20:25:16 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Fri Sep  1 20:25:25 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:22:38 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:24:17 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:28:18 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:28:59 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:30:12 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:32:24 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:33:46 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:38:02 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:38:50 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:40:50 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:43:00 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:44:02 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:46:34 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:47:53 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:52:05 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:53:50 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:54:21 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 17:55:09 2023{'_CB1': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 1}}
+Sat Sep  2 17:59:16 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 18:05:52 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 18:06:19 2023{'_CB1': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 1}}
+Sat Sep  2 18:06:22 2023{}
+Sat Sep  2 18:07:52 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 18:10:10 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 18:11:09 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 18:27:26 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 18:28:16 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 18:29:35 2023{'_CB1': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 1}}
+Sat Sep  2 18:30:22 2023{'_CB2': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 2}}
+Sat Sep  2 18:36:08 2023{'_CB3': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 3}}
+Sat Sep  2 18:39:11 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Sat Sep  2 18:40:37 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:03:30 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:05:44 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:06:15 2023None
+Mon Sep  4 10:06:16 2023None
+Mon Sep  4 10:06:17 2023None
+Mon Sep  4 10:06:18 2023None
+Mon Sep  4 10:06:19 2023None
+Mon Sep  4 10:06:20 2023None
+Mon Sep  4 10:06:22 2023None
+Mon Sep  4 10:06:26 2023None
+Mon Sep  4 10:06:28 2023None
+Mon Sep  4 10:14:08 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:14:16 2023<built-in function id>
+Mon Sep  4 10:14:16 2023<built-in function id>
+Mon Sep  4 10:16:47 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:18:08 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:18:10 2023<built-in function id>
+Mon Sep  4 10:18:14 2023<built-in function id>
+Mon Sep  4 10:18:15 2023<built-in function id>
+Mon Sep  4 10:21:45 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:28:17 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:28:20 202310
+Mon Sep  4 10:28:20 202310
+Mon Sep  4 10:34:39 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:36:17 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:37:29 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:39:42 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:45:07 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:47:05 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:49:18 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:51:07 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:52:52 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:54:59 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:57:43 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 10:58:16 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:07:38 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:12:32 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:12:37 2023Mon Sep  4 11:12:38 2023Mon Sep  4 11:12:38 2023Mon Sep  4 11:14:10 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:14:14 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:14:15 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:14:16 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:14:16 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:14:23 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:14:24 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:14:39 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:14:39 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:14:39 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:19:49 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:19:54 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:19:56 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:19:57 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:19:59 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:20:01 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:22:41 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:22:55 2023	setData	0	2	SLIDING
+Mon Sep  4 11:23:04 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:23:04 2023	setData	0	3	False
+Mon Sep  4 11:23:14 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:23:14 2023	setData	0	3	False
+Mon Sep  4 11:23:16 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:23:16 2023	setData	0	3	False
+Mon Sep  4 11:26:48 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:26:53 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:26:53 2023	setData	0	3	False
+Mon Sep  4 11:27:26 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:27:26 2023	setData	0	3	False
+Mon Sep  4 11:27:27 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:27:27 2023	setData	0	3	False
+Mon Sep  4 11:29:04 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:29:09 2023	setData	0	2	BONDED
+Mon Sep  4 11:29:09 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:29:16 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:29:16 2023	setData	0	3	False
+Mon Sep  4 11:29:19 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:29:19 2023	setData	0	3	False
+Mon Sep  4 11:29:20 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:29:20 2023	setData	0	3	False
+Mon Sep  4 11:29:30 2023	setData	0	2	FRICTION
+Mon Sep  4 11:29:30 2023	[[10, '_CB10', 'FRICTION', True, '', '']]	
+Mon Sep  4 11:29:36 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:29:36 2023	setData	0	3	False
+Mon Sep  4 11:29:38 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:29:38 2023	setData	0	3	False
+Mon Sep  4 11:29:43 2023	setData	0	2	FRICTIONLESS
+Mon Sep  4 11:29:43 2023	[[10, '_CB10', 'FRICTIONLESS', True, '', '']]	
+Mon Sep  4 11:32:23 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:32:27 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:32:27 2023	setData	0	3	False
+Mon Sep  4 11:32:28 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:32:28 2023	setData	0	3	False
+Mon Sep  4 11:32:39 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:32:39 2023	setData	0	3	False
+Mon Sep  4 11:32:47 2023	setData	0	2	BONDED
+Mon Sep  4 11:33:03 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:33:03 2023	setData	0	3	False
+Mon Sep  4 11:33:07 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:33:07 2023	setData	0	3	False
+Mon Sep  4 11:33:13 2023	setData	0	2	BONDED
+Mon Sep  4 11:34:04 2023{'_CB10': {'master': '0:1:1:6:2:14', 'slave': '0:1:1:6:2:15', 'pair_id': 10}}
+Mon Sep  4 11:34:09 2023	setData	0	2	BONDED
+Mon Sep  4 11:34:09 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:10 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:10 2023	setData	0	3	False
+Mon Sep  4 11:34:10 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:15 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:15 2023	setData	0	3	True
+Mon Sep  4 11:34:15 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:15 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:15 2023	setData	0	3	False
+Mon Sep  4 11:34:15 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:16 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:16 2023	setData	0	3	True
+Mon Sep  4 11:34:16 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:17 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:17 2023	setData	0	3	False
+Mon Sep  4 11:34:17 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:18 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:18 2023	setData	0	3	True
+Mon Sep  4 11:34:18 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:19 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:19 2023	setData	0	3	False
+Mon Sep  4 11:34:19 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:20 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:20 2023	setData	0	3	True
+Mon Sep  4 11:34:20 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:21 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:21 2023	setData	0	3	False
+Mon Sep  4 11:34:21 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:23 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:23 2023	setData	0	3	True
+Mon Sep  4 11:34:23 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:24 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:24 2023	setData	0	3	False
+Mon Sep  4 11:34:24 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:25 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:25 2023	setData	0	3	True
+Mon Sep  4 11:34:25 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:25 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:25 2023	setData	0	3	False
+Mon Sep  4 11:34:25 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:27 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:27 2023	setData	0	3	True
+Mon Sep  4 11:34:27 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:27 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:27 2023	setData	0	3	False
+Mon Sep  4 11:34:27 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:28 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:28 2023	setData	0	3	True
+Mon Sep  4 11:34:28 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 11:34:31 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 11:34:32 2023	setData	0	3	False
+Mon Sep  4 11:34:32 2023	[[10, '_CB10', 'BONDED', False, '', '']]	
+Mon Sep  4 11:34:32 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 11:34:32 2023	setData	0	3	True
+Mon Sep  4 11:34:32 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
