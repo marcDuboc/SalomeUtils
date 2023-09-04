@@ -1,8 +1,17 @@
 import numpy as np
+import time
 import itertools
 import copy
 import GEOM
+import salome
 from salome.geom import geomBuilder
+
+
+# Detect current study
+geompy = geomBuilder.New()
+salome.salome_init()
+
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class Point():
     def __init__(self, x=0.0, y=0.0, z=0.0):
@@ -146,7 +155,6 @@ class ShapeProperties():
         return properties
            
 class ShapeCoincidence():
-    Geompy = geomBuilder.New()
 
     def __init__(self):
         self.tolerance = 0.01
@@ -216,8 +224,8 @@ class ShapeCoincidence():
 
         # check if diameter are equal and area contact is not null
         if cylinder1['radius'] == cylinder2['radius']:
-            common = ShapeCoincidence.Geompy.MakeCommon(shape1, shape2)
-            props = ShapeCoincidence.Geompy.BasicProperties(common)
+            common = geompy.MakeCommon(shape1, shape2)
+            props = geompy.BasicProperties(common)
             area_com = props[1]
             if area_com == 0.0:
                 return False
@@ -232,8 +240,8 @@ class ParseShapesIntersection():
     """
     Class to parse the intersection between two shapes
     """
-    Geompy = geomBuilder.New()
-    Shape_allowed = ['PLANE','PLANAR', 'CYLINDER', 'CYLINDER2D', 'SPHERE','SHERE2D', 'CONE','CONE2D', 'TORUS']
+
+    Shape_allowed = ['PLANE','PLANAR','POLYGON','DISK_CIRCLE','DISK_ELLIPSE' ,'CYLINDER', 'CYLINDER2D', 'SPHERE','SHERE2D', 'CONE','CONE2D', 'TORUS']
 
     def __init__(self):
         self.Coincidence = ShapeCoincidence()
@@ -241,69 +249,97 @@ class ParseShapesIntersection():
     def _parse_for_allow_subshapes(self, subshape_list):
         subshapes=list()
         for i in range(len(subshape_list)):
-            kos = str(ParseShapesIntersection.Geompy.KindOfShape(subshape_list[i])[0])
+            kos = str(geompy.KindOfShape(subshape_list[i])[0])
+
             if kos in ParseShapesIntersection.Shape_allowed:
                 subshapes.append(subshape_list[i])
+
+            else:
+                raise ValueError(f"Shape {kos} is not allowed")
+
         return subshapes
 
+    def _get_shapeSid_and_subshapesIndices(self, subshapes:GEOM._objref_GEOM_Object):
+        parent_sid = subshapes.GetMainShape().GetStudyEntry()
+        subshape_index = subshapes.GetSubShapeIndices()
+
+        if type(subshape_index)!=list:
+            subshape_index = list(subshape_index)
+
+        return (parent_sid, subshape_index)
         
     def _get_contact_area(self, subobj1, subobj2):
-        common_area = ParseShapesIntersection.Geompy.MakeCommon(subobj1, subobj2)
-        area = ParseShapesIntersection.Geompy.BasicProperties(common_area)
+        common_area = geompy.MakeCommon(subobj1, subobj2)
+        area = geompy.BasicProperties(common_area)
         return area[1]
     
     def _get_shape_area(self,shape):
-        area = ParseShapesIntersection.Geompy.BasicProperties(shape)
+        area = geompy.BasicProperties(shape)
         return area[1]
 
-    def intersection(self, obj1, obj2, gap=0):
+    def intersection(self, obj1_sid:str, obj2_sid:str, gap=0.0, tol=0.01):
         """
         Get the intersection between two shapes
         """
+        obj1 = salome.IDToObject(obj1_sid)
+        obj2 = salome.IDToObject(obj2_sid)
+
         self.Coincidence.gap = gap
         candidates = list()
+        has_contact = False
 
         try:
-            isconnect, res1, res2 = ParseShapesIntersection.Geompy.FastIntersect(obj1, obj2, gap)
+            isconnect, res1, res2 = geompy.FastIntersect(obj1, obj2, gap)
 
             if isconnect:
-                uncheck_1 = ParseShapesIntersection.Geompy.SubShapes(obj1, res1)
-                uncheck_2 = ParseShapesIntersection.Geompy.SubShapes(obj2, res2)
+                uncheck_1 = geompy.SubShapes(obj1, res1)
+                uncheck_2 = geompy.SubShapes(obj2, res2)
                 contact_1 = self._parse_for_allow_subshapes(uncheck_1)
                 contact_2 = self._parse_for_allow_subshapes(uncheck_2)
-                
+            
                 combinaison = list(itertools.product(contact_1, contact_2))
 
                 # check if subshapes intersect
                 for c in combinaison:
                     try:
-                        connected, _, _ = ParseShapesIntersection.Geompy.FastIntersect(
-                        c[0], c[1], gap)
+                        connected, _, _ = geompy.FastIntersect(c[0], c[1], gap)
 
                     except:
                         connected = False
 
                     if connected:
+
                         # check for shape coincidence
                         if self.Coincidence.are_coincident(c[0], c[1]):
-                            candidates.append((c[0],c[1]))
+                            has_contact = True
+                            m= self._get_shapeSid_and_subshapesIndices(c[0])
+                            s= self._get_shapeSid_and_subshapesIndices(c[1])
+                            candidates.append((m,s))
 
                         else:
                         # check by contact area
                             area = self._get_contact_area(c[0], c[1])
+
                             if area > 0:
+
+                                has_contact = True
                                 if self._get_shape_area(c[0]) >= self._get_shape_area(c[1]):
-                                    candidates.append((c[0],c[1]))
+                                    m= self._get_shapeSid_and_subshapesIndices(c[0])
+                                    s= self._get_shapeSid_and_subshapesIndices(c[1])
+
                                 else:
-                                    candidates.append((c[1],c[0]))
+                                    m= self._get_shapeSid_and_subshapesIndices(c[1])
+                                    s= self._get_shapeSid_and_subshapesIndices(c[0])
+
+                                candidates.append((m,s))
                     
-                return True, candidates
+                return has_contact, tuple(candidates)
 
             else:
-                return False, None
+                return has_contact, None
             
         except:
-            return False, None       
+            return has_contact, None       
 
 
 

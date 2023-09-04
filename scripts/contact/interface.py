@@ -16,7 +16,7 @@ root_path= os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe(
 img_path = os.path.join(root_path, 'img')
 
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 
 class TypeDelegate(QItemDelegate):

@@ -45,7 +45,7 @@ geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class ContactAuto(QObject):
     compound_selected = pyqtSignal(str)
@@ -57,6 +57,7 @@ class ContactAuto(QObject):
         self.Gui = ContactGUI()
         self.Tree = Tree()
         self.Contact = ContactManagement()
+        self.Intersect = ParseShapesIntersection()
 
         self.parts =[]
 
@@ -129,13 +130,21 @@ class ContactAuto(QObject):
 
     @pyqtSlot(float, float, bool)
     def process_contact(self, tol, angle, isAuto):
-        with open(DEBUG_FILE, 'a') as f:
-            f.write(time.ctime())
-            f.write(str(tol)+'\t')
-            f.write(str(angle)+'\t')
-            f.write(str(isAuto))
-            f.write('\n')
-                
+        contact_pairs = []
+        combine = list(itertools.combinations(self.parts, 2))
+
+        for i in range(len(combine)):
+            res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=tol)
+            if res:
+                for c in candidate:
+                    contact_pairs.append(c)
+
+        # add new contacts to contactManager
+        for i in range(len(contact_pairs)):
+            self.Contact.create_from_intersection(contact_pairs[i][0][0], contact_pairs[i][0][1],contact_pairs[i][1][0], contact_pairs[i][1][1])
+
+        # update table
+        self.Gui.set_data(self.Contact.to_table_model())
 
     
 class MyDockWidget(QDockWidget):
@@ -145,12 +154,11 @@ class MyDockWidget(QDockWidget):
         self.widgetClosed.emit()
         super(MyDockWidget, self).closeEvent(event)
 
-
 contact_auto_instance = ContactAuto()
 
 def delete_contact_auto_instance():
     global contact_auto_instance
-    del contact_auto_instance  # ou toute autre logique de nettoyage
+    del contact_auto_instance 
     print("ContactAuto instance deleted.")
 
 d = MyDockWidget()
@@ -159,8 +167,6 @@ d.setAttribute(Qt.WA_DeleteOnClose)
 d.setWindowFlags(d.windowFlags() | Qt.WindowStaysOnTopHint)
 d.setWindowTitle("3D Contacts")
 d.setGeometry(600, 300, 400, 400)
-
-# Connecter le signal au slot
 d.widgetClosed.connect(delete_contact_auto_instance)
 
 d.show()

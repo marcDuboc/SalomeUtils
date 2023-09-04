@@ -19,7 +19,7 @@ Gst = geomtools.GeomStudyTools(StudyEditor)
 Gg = salome.ImportComponentGUI("GEOM")
 Builder = salome.myStudy.NewBuilder()
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class GroupItem():
     Geompy = geomBuilder.New()
@@ -54,20 +54,27 @@ class GroupItem():
     def create(self, shape_sid:str, subshape_indices:list):
         self.shape_sid = shape_sid
         self.subshapes_indices = subshape_indices
+        subobj = Geompy.GetSubShape(salome.IDToObject(shape_sid), subshape_indices)
+        if type(subobj) == list:
+            subobj = subobj[0]
+        self.type = subobj.GetShapeType()._v
+
 
     def create_from_group(self, group_sid:str):
         obj = salome.IDToObject(group_sid)
         parent = obj.GetMainShape()
         subshapes_indices = obj.GetSubShapeIndices()
         sub = Geompy.GetSubShape(parent, subshapes_indices)
+
         if type(sub) == list:
             sub = sub[0]
         self.type = sub.GetShapeType()._v
+
         self.shape_sid = parent.GetStudyEntry()
         self.subshapes_indices = subshapes_indices
 
     def get_parent(self):
-        return salome.IDToObject(self.shapes_sid)
+        return salome.IDToObject(self.shape_sid)
         
 class ContactItem():
 
@@ -245,12 +252,18 @@ class ContactPair():
 
         name = common_name + c_type + suffix
 
+        with open(DEBUG_FILE, 'a') as f:
+            f.write(time.ctime()+"\t")
+            f.write("group item" + str(group_item.type)+ "\t" + str(group_item.get_parent()))
+            f.write('\n')
+
         group = Geompy.CreateGroup(group_item.get_parent(), group_item.type)
         indices = group_item.subshapes_indices
 
         Geompy.AddObject(group, indices.pop(0))
         if len(indices) > 0:
             Geompy.UnionIDs(group,indices)
+
         group_sid = Geompy.addToStudyInFather(group_item.get_parent(), group, name)
         self.groups_sid.append(group_sid)
 
@@ -393,7 +406,7 @@ class ContactManagement():
         return Geompy.SubShapes(main_shape, indices)
     
     # method to be used with autotools
-    def create_from_subshapes(self, shape_1_sid:str, sub_1:list(), shape_2_sid:str, sub_2:list()):
+    def create_from_intersection(self, shape_1_sid:str, sub_1:list(), shape_2_sid:str, sub_2:list()):
 
         c1 = GroupItem()
         c1.create(shape_1_sid, sub_1)
