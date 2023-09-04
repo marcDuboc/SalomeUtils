@@ -188,3 +188,111 @@ Mon Sep  4 11:34:32 2023	[[10, '_CB10', 'BONDED', False, '', '']]
 Mon Sep  4 11:34:32 2023hideshow_by_id: id: 10, value: True
 Mon Sep  4 11:34:32 2023	setData	0	3	True
 Mon Sep  4 11:34:32 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 14:52:40 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 14:52:59 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 14:52:59 2023	setData	0	3	False
+Mon Sep  4 14:52:59 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 14:53:00 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 14:53:00 2023	setData	0	3	True
+Mon Sep  4 14:53:00 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 14:53:02 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 14:53:02 2023	setData	0	3	False
+Mon Sep  4 14:53:02 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 14:53:02 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 14:53:02 2023	setData	0	3	True
+Mon Sep  4 14:53:02 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 14:55:56 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 14:56:11 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 14:56:11 2023	setData	0	3	False
+Mon Sep  4 14:56:11 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 14:56:12 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 14:56:12 2023	setData	0	3	True
+Mon Sep  4 14:56:12 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:01:18 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 15:01:31 2023delete_by_id: id: 10
+Mon Sep  4 15:08:02 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 15:14:32 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 15:14:40 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 15:14:40 2023	setData	0	3	False
+Mon Sep  4 15:14:40 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 15:14:40 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 15:14:40 2023	setData	0	3	True
+Mon Sep  4 15:14:40 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:14:46 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 15:14:46 2023	setData	0	3	False
+Mon Sep  4 15:14:46 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 15:14:46 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 15:14:46 2023	setData	0	3	True
+Mon Sep  4 15:14:46 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:15:14 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 15:15:14 2023	setData	0	3	False
+Mon Sep  4 15:15:14 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 15:15:15 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 15:15:15 2023	setData	0	3	True
+Mon Sep  4 15:15:15 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:15:21 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 15:15:21 2023	setData	0	3	False
+Mon Sep  4 15:15:21 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 15:15:22 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 15:15:22 2023	setData	0	3	True
+Mon Sep  4 15:15:22 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:15:25 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 15:15:25 2023	setData	0	3	False
+Mon Sep  4 15:15:25 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 15:15:26 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 15:15:26 2023	setData	0	3	True
+Mon Sep  4 15:15:26 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:15:27 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 15:15:27 2023	setData	0	3	False
+Mon Sep  4 15:15:27 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 15:15:29 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 15:15:29 2023	setData	0	3	True
+Mon Sep  4 15:15:29 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:15:30 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 15:15:30 2023	setData	0	3	False
+Mon Sep  4 15:15:30 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 15:15:34 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 15:15:34 2023	setData	0	3	True
+Mon Sep  4 15:15:34 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:15:41 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 15:15:41 2023	setData	0	3	False
+Mon Sep  4 15:15:41 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 15:15:42 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 15:15:42 2023	setData	0	3	True
+Mon Sep  4 15:15:42 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 15:24:05 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 15:53:56 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 15:54:05 2023 change_type_by_id: id: 10, value: BONDED
+Mon Sep  4 15:54:05 2023	setData	0	2	BONDED
+Mon Sep  4 15:54:05 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 15:54:25 2023 change_type_by_id: id: 10, value: FRICTION
+Mon Sep  4 15:54:25 2023	setData	0	2	FRICTION
+Mon Sep  4 15:54:25 2023	[[10, '_CB10', 'FRICTION', True, '', '']]	
+Mon Sep  4 15:54:53 2023 change_type_by_id: id: 10, value: BONDED
+Mon Sep  4 15:54:53 2023	setData	0	2	BONDED
+Mon Sep  4 15:54:53 2023	[[10, '_CB10', 'BONDED', True, '', '']]	
+Mon Sep  4 15:54:57 2023 change_type_by_id: id: 10, value: SLIDING
+Mon Sep  4 15:54:57 2023	setData	0	2	SLIDING
+Mon Sep  4 15:54:57 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 16:21:51 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 16:22:28 2023hideshow_by_id: id: 10, value: False
+Mon Sep  4 16:22:28 2023	setData	0	3	False
+Mon Sep  4 16:22:28 2023	[[10, '_CB10', 'SLIDING', False, '', '']]	
+Mon Sep  4 16:22:30 2023hideshow_by_id: id: 10, value: True
+Mon Sep  4 16:22:30 2023	setData	0	3	True
+Mon Sep  4 16:22:30 2023	[[10, '_CB10', 'SLIDING', True, '', '']]	
+Mon Sep  4 17:26:08 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 17:40:08 2023{'_CB10': {'master': '0:1:1:6:2:2', 'slave': '0:1:1:6:2:3', 'pair_id': 10}}
+Mon Sep  4 17:40:44 2023{}
+Mon Sep  4 17:49:35 2023{}
+Mon Sep  4 17:49:58 2023select_parts	['0:1:1:9:3', '0:1:1:9:4']
+Mon Sep  4 17:50:18 2023select_parts	['0:1:1:9:3', '0:1:1:9:4']
+Mon Sep  4 17:53:48 2023{}
+Mon Sep  4 17:54:06 2023select_parts	['0:1:1:9:3', '0:1:1:9:4']
+Mon Sep  4 17:54:13 20230.0	0.01	True
+Mon Sep  4 17:54:20 20230.0	0.01	True
+Mon Sep  4 17:54:23 20230.0	0.01	True
+Mon Sep  4 17:56:41 2023{}
+Mon Sep  4 17:56:59 2023select_parts	['0:1:1:9:3', '0:1:1:9:4']
+Mon Sep  4 17:57:01 2023	emit_run	0.0	0.01	True	
+Mon Sep  4 17:57:01 20230.0	0.01	True

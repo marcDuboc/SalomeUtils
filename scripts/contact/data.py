@@ -19,7 +19,7 @@ Gst = geomtools.GeomStudyTools(StudyEditor)
 Gg = salome.ImportComponentGUI("GEOM")
 Builder = salome.myStudy.NewBuilder()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class GroupItem():
     Geompy = geomBuilder.New()
@@ -490,12 +490,18 @@ class ContactManagement():
         return indices_list
 
     # delete contact pairs from study inputs id
-    def delete(self, id):
+    def delete_by_id(self, id):
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 self._contacts.remove(pairs)
-                del pairs
+                pairs.delete()
                 break
+            
+        with open(DEBUG_FILE, 'a') as f:
+            msg = "delete_by_id: id: {}".format(id)
+            f.write(time.ctime())
+            f.write(msg)
+            f.write('\n')
         salome.sg.updateObjBrowser()
    
     # show pairs 
@@ -554,3 +560,15 @@ class ContactManagement():
                     self.hide(id)
                 break
 
+    # change type of contact
+    def change_type_by_id(self,id:int,value:str):
+        with open(DEBUG_FILE, 'a') as f:
+            msg = " change_type_by_id: id: {}, value: {}".format(id,value)
+            f.write(time.ctime())
+            f.write(msg)
+            f.write('\n')
+
+        for pairs in self._contacts:
+            if pairs.id_instance == id:
+                pairs.set_type(value)
+                break

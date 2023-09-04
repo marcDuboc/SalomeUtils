@@ -45,10 +45,11 @@ geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class ContactAuto(QObject):
     compound_selected = pyqtSignal(str)
+    parts_selected = pyqtSignal(list)
 
     def __init__(self):
         super(ContactAuto, self).__init__()
@@ -56,6 +57,8 @@ class ContactAuto(QObject):
         self.Gui = ContactGUI()
         self.Tree = Tree()
         self.Contact = ContactManagement()
+
+        self.parts =[]
 
         self.compound_selected.connect(self.Gui.on_compound_selected)
         self.Gui.load_compound.connect(self.select_compound)
@@ -98,6 +101,41 @@ class ContactAuto(QObject):
             #connect signals
             self.Gui.swapItem.swap.connect(self.Contact.swap_master_slave_by_id)
             self.Gui.hideShowItem.hideShow.connect(self.Contact.hideshow_by_id)
+            self.Gui.deleteItem.delContact.connect(self.Contact.delete_by_id)
+            self.Gui.typeItem.changeType.connect(self.Contact.change_type_by_id)
+            self.Gui.autoWindow.partSelection.connect(self.select_parts)
+            self.parts_selected.connect(self.Gui.autoWindow.set_parts)
+            self.Gui.autoWindow.contactRun.connect(self.process_contact)
+
+    @pyqtSlot()
+    def select_parts(self):
+        self.parts =[]
+        selCount = salome.sg.SelectedCount()
+        part_ids=[]
+        if selCount < 2:
+            self.parts_selected.emit([])
+
+        elif selCount > 1:
+            for i in range(selCount):
+                id = salome.sg.getSelected(i)
+                part_ids.append(id)
+                self.parts.append(id)
+            self.parts_selected.emit(part_ids)
+        with open(DEBUG_FILE, 'a') as f:
+            f.write(time.ctime())
+            f.write("select_parts\t")
+            f.write(str(self.parts))
+            f.write('\n')
+
+    @pyqtSlot(float, float, bool)
+    def process_contact(self, tol, angle, isAuto):
+        with open(DEBUG_FILE, 'a') as f:
+            f.write(time.ctime())
+            f.write(str(tol)+'\t')
+            f.write(str(angle)+'\t')
+            f.write(str(isAuto))
+            f.write('\n')
+                
 
     
 class MyDockWidget(QDockWidget):
