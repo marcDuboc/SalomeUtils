@@ -8,6 +8,7 @@ import re
 import salome
 import GEOM
 
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 def id_to_tuple(id):
     """
@@ -21,10 +22,22 @@ def tuple_to_id(tuple):
     """
     return ':'.join([str(i) for i in tuple])
 
+class ObjectType():
+    """reference 
+    https://docs.salome-platform.org/7/gui/GEOM/geometrical_obj_prop_page.html"""
+
+    SOLID = 26
+    FACE = 24
+    SHELL = 25
+    COMPOUND = 27
+    SUBSHAPE= 28
+    GROUP = 37
+
 class TreeItem():
-    def __init__(self,id:tuple,name:str):
+    def __init__(self,id:tuple,name:str,type=int):
         self.id = id
         self.name = name
+        self.type = type
 
     def parent_id(self):
         return self.id[:-1]
@@ -33,15 +46,28 @@ class TreeItem():
         return tuple_to_id(self.id)
     
     def __repr__(self):
-        return f'name={self.name}, id={tuple_to_id(self.id)}'
+        return f"TreeItem(id={self.id},name={self.name},type={self.type})"
 
 class Tree:
+
     def __init__(self) -> None:
         self.root = '0:1:1'
         self.objects = None
         self.contact_pattern = re.compile(r"^_C[A-D]\d{1,4}[MS]$")
+
+    def _check_type(self, obj_sid:str):
+        """
+        return True if the object is allowed
+        """
+        obj=salome.IDToObject(obj_sid)
+        try:
+            obj_type = obj.GetType()
+            return True,obj_type
+
+        except:
+            return False,None
     
-    def get_objects(self, compound_id='0:1:1' , component=None):
+    def parse_tree_objects(self, compound_id:str() , component=None):
         """
         retrun a list of tree items within the compound_id
         """
@@ -65,16 +91,25 @@ class Tree:
             test_id = id[:length_compound_id]
 
             if test_id == compound_id:
-                name = sobj.GetName()
-                if name:
-                    item=TreeItem(id,name)
+                ok, obj_type = self._check_type(sobj.GetID())
+                if ok:
+                    item=TreeItem(id,sobj.GetName(),obj_type)
                     self.objects.append(item)
-
             iter.Next()
 
         return self.objects
     
-    def parse_for_contact(self):
+    def get_parts(self,type=[ObjectType.SOLID,ObjectType.SUBSHAPE]):
+        """
+        return a list of parts
+        """
+        parts = list()
+        for obj in self.objects:
+            if obj.type in type:
+                parts.append(obj)
+        return parts
+    
+    def get_contacts(self):
         """
         return a dict of contact objects such as {name:{master:obj, slave:obj}}}
         master and slave are defined by the suffix M|S
@@ -84,7 +119,7 @@ class Tree:
         # select contact objects
         contacts = list()
         for obj in self.objects:
-            if re.match(pattern,obj.name):
+            if re.match(pattern,obj.name) and obj.type == ObjectType.GROUP:
                 contacts.append(obj)
 
         # regroup contacts by name (without the suffix M|S)
@@ -107,6 +142,14 @@ class Tree:
         
         return contacts_by_name
         
-
+    def get_by_type(self,type:int):
+        """
+        return a list of objects of type
+        """
+        objects = list()
+        for obj in self.objects:
+            if obj.type == type:
+                objects.append(obj)
+        return objects
 
 

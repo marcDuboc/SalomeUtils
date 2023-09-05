@@ -22,7 +22,6 @@ Builder = salome.myStudy.NewBuilder()
 DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class GroupItem():
-    Geompy = geomBuilder.New()
     shape_allowable_type = (Geompy.ShapeType["FACE"], Geompy.ShapeType["EDGE"], Geompy.ShapeType["VERTEX"])
 
     def __init__(self):
@@ -41,7 +40,6 @@ class GroupItem():
                     return False
             return True
         
-
     """def _are_allowed(self, shubshape_indice):
         #Check if the shape and subshape topology are valid
         type = shape.GetShapeType()._v
@@ -58,7 +56,6 @@ class GroupItem():
         if type(subobj) == list:
             subobj = subobj[0]
         self.type = subobj.GetShapeType()._v
-
 
     def create_from_group(self, group_sid:str):
         obj = salome.IDToObject(group_sid)
@@ -176,6 +173,7 @@ class ContactPair():
     slave_color=salome.SALOMEDS.Color(0,0,1)
 
     def __init__(self, id=None):
+
         if id in ContactPair.ids_available:
             self.id_instance=id
             ContactPair.ids_available.remove(self.id_instance)
@@ -196,6 +194,9 @@ class ContactPair():
         self.visible = True
 
     def __del__(self):
+        ContactPair.ids_used.clear()
+        ContactPair.ids_available=[x for x in range(1,1000)]
+
         self.groups_sid.clear()
         for item in self.items:
             del item
@@ -219,6 +220,18 @@ class ContactPair():
             "gap": self.gap,
             "completed": self.completed
         }
+    
+    def to_dict_for_export(self):
+        if self.completed:
+            cont = dict()
+            cont['id'] = self.id_instance
+            cont['type'] = self.type
+            cont['shapes'] = []
+            cont['subshapes'] = self.get_group_names()
+            cont['gap'] = self.gap
+            for item in self.items:
+                cont['shapes'].append(salome.IDToObject(item.shape_sid).GetName())
+            return cont
 
     def to_table_model(self):
         return OrderedDict(id=self.id_instance, name=self.name, type=self.type, visible=self.visible)
@@ -296,7 +309,8 @@ class ContactPair():
         return self.groups_sid
     
     def get_group_names(self):
-        return (salome.IDToObejct(group).GetName() for group in self.groups_sid)
+        grp_name= [salome.IDToObject(group).GetName() for group in self.groups_sid]
+        return grp_name
 
     def set_type(self, type:str):
         if type in self.type_dict.keys():
@@ -402,7 +416,7 @@ class ContactManagement():
     def create_from_groupItem(self, group_1:GroupItem, group_2:GroupItem):
         # check if the contact already exists
         if self._does_contact_pairs_exist(group_1, group_2):
-            raise ValueError("Contact already exists")
+            return False
         else:
             group_pairs = ContactPair()
             group_pairs.add_items(group_1)
@@ -411,6 +425,7 @@ class ContactManagement():
 
             # show the group
             self.show(group_pairs.id_instance)
+            return True
 
     # create the contact group from the tree. Run once at script launch 
     # the naming convention is _C<type><id><MS>   
@@ -424,10 +439,7 @@ class ContactManagement():
             ci1.create_from_group(v['master'])
             ci2.create_from_group(v['slave'])
 
-            if self._does_contact_pairs_exist(ci1,ci2):
-                raise ValueError("Contact already exists")
-            
-            else:
+            if not self._does_contact_pairs_exist(ci1,ci2):
                 # create contact pair
                 id=v['pair_id']
                 cp = ContactPair(id)
@@ -445,7 +457,7 @@ class ContactManagement():
 
                 # show the group
                 self.show(cp.id_instance)
-
+                
     # create contact manually by selecting 2 groups. the original groups are deleted. New group are created using contactPair class. 
     def create_from_groupsID(self, group_1_sid:str, group_2_sid:str):
 
@@ -461,7 +473,7 @@ class ContactManagement():
 
         # check if the contact already exists
         if self._does_contact_pairs_exist(grp1, grp2):
-            raise ValueError("Contact already exists")
+            return False
         else:
             # create contact pair
             self.create_from_groupItem(grp1, grp2)
@@ -470,6 +482,7 @@ class ContactManagement():
             for id in (group_1_sid, group_2_sid):
                 Gst.removeFromStudy(id)
                 Gst.eraseShapeByEntry(id)
+            return True
 
     def get_all_pairs(self):
         return self._contacts
@@ -482,7 +495,7 @@ class ContactManagement():
         return model
     
     # get contact pairs
-    def get_pair(self,id):
+    def get_pair(self,id:int):
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 return pairs
@@ -500,7 +513,7 @@ class ContactManagement():
         return indices_list
 
     # delete contact pairs from study inputs id
-    def delete_by_id(self, id):
+    def delete_by_id(self, id:int):
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 self._contacts.remove(pairs)
@@ -508,7 +521,7 @@ class ContactManagement():
                 break
    
     # show pairs 
-    def show(self, id):
+    def show(self, id:int):
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.visible = True
@@ -518,7 +531,7 @@ class ContactManagement():
                 break
 
     # hide pairs                
-    def hide(self, id):
+    def hide(self, id:int):
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.visible = False
@@ -527,12 +540,14 @@ class ContactManagement():
                 break
 
     # export contact pairs to list
-    def export(self,file):
-        pairs_list = [pairs.to_dict() for pairs in self._contacts]
-        json.dump(pairs_list, file, indent=4)
+    def export(self,file:str):
+        pairs_list = [pairs.to_dict_for_export() for pairs in self._contacts]
+
+        with open(file, 'w') as file:
+            json.dump(pairs_list, file, indent=4)
         
     # swap master and slave
-    def swap_master_slave_by_id(self,id):
+    def swap_master_slave_by_id(self,id:int):
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.swap_master_slave()

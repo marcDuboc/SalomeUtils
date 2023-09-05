@@ -5,18 +5,15 @@
 # Version: 11/08/2023
 
 import os
-import inspect
 import sys
+import inspect
+import logging
 import itertools
-import re
-import json
 import time
-import numpy as np
 import GEOM
 import salome
-from salome.geom import geomBuilder, geomtools
+from salome.geom import geomBuilder
 
-from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt
 from PyQt5.QtWidgets import QDockWidget
 
@@ -65,12 +62,15 @@ class ContactAuto(QObject):
         self.compound_selected.connect(self.Gui.on_compound_selected)
         self.Gui.load_compound.connect(self.select_compound)
         self.existing_parts.connect(self.Gui.set_compounds_parts)
+        self.Gui.export_contact.connect(self.export_contact)
         
     def __del__(self):
         del self.Tree
         del self.Contact
         del self.Gui
-              
+        del self.Intersect
+
+    # Slot ====================================================================          
     @pyqtSlot()
     def select_compound(self):
         selCount = salome.sg.SelectedCount()
@@ -86,11 +86,15 @@ class ContactAuto(QObject):
             self.compound_selected.emit(name+ '\t'+ id)
 
             # parse for existing contacts
-            self.Tree.get_objects(id)
-            existing_contact = self.Tree.parse_for_contact()
+            self.Tree.parse_tree_objects(id)
+            existing_contact = self.Tree.get_contacts()
+
+            with open(DEBUG_FILE, 'a') as f:
+                f.write(time.ctime() + '\t')
+                f.write(str(existing_contact)+'\n')
 
             # emit existing parts to Gui
-            self.existing_parts.emit([x.get_sid() for x in self.Tree.objects])
+            self.existing_parts.emit([x.get_sid() for x in self.Tree.get_parts()])
 
             # add existing contacts to contactManager
             self.Contact.create_from_tree(existing_contact)
@@ -106,7 +110,7 @@ class ContactAuto(QObject):
             self.Gui.autoWindow.partSelection.connect(self.select_parts)
             self.parts_selected.connect(self.Gui.autoWindow.set_parts)
             self.Gui.autoWindow.contactRun.connect(self.process_contact)
-
+    
     @pyqtSlot()
     def select_parts(self):
         self.parts =[]
@@ -148,6 +152,10 @@ class ContactAuto(QObject):
     @pyqtSlot(str,str)
     def manual_contact(self, group_sid_1:str, group_sid_2:str):
         self.Contact.create_from_groupsID(group_sid_1, group_sid_2)
+
+    @pyqtSlot(str)
+    def export_contact(self, filename):
+        self.Contact.export(filename)
 
 
 class MyDockWidget(QDockWidget):

@@ -182,11 +182,11 @@ class TableModel(QAbstractTableModel):
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         # header data
+        header = ['ID','Name','Type','Display','Swap','Delete']
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
-                return 'Column {}'.format(section)
-            else:
-                return 'Row {}'.format(section)
+                return '{}'.format(header[section])
+
     
     def insertRows(self, position, rows, parent=QModelIndex()):
         self.beginInsertRows(parent, position, position + rows - 1)
@@ -201,28 +201,6 @@ class TableModel(QAbstractTableModel):
             del self._data[position]
         self.endRemoveRows()
         return True
-    
-class SecondaryWindow(QWidget):
-    dataReady = pyqtSignal(object)  # Define the custom signal
-
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-
-    def initUI(self):
-        self.setWindowTitle('Secondary Window')
-        label = QLabel('This is a secondary window.')
-        layout = QVBoxLayout()
-        layout.addWidget(label)
-        bt = QPushButton('Ok')
-        layout.addWidget(bt)
-        self.setLayout(layout)
-        bt.clicked.connect(self.sendData)
-
-    def sendData(self):
-        # Emit the custom signal with the data you want to send
-        # (replace "your_data_here" with the actual data)
-        self.dataReady.emit("your_data_here")
 
 class AutoWindows(QWidget):
     partSelection = pyqtSignal()
@@ -243,7 +221,7 @@ class AutoWindows(QWidget):
         self.le_p.setReadOnly(True)
         self.le_p.setText("Please select at least 2 parts")
         self.bt_p = QPushButton()
-        self.bt_p.setText("Load")
+        self.bt_p.setIcon(QIcon(os.path.join(img_path,'input.png')))
 
         # Adjust Gap
         self.l_gap = QLabel("Max gap between (model unit): ")
@@ -307,14 +285,6 @@ class AutoWindows(QWidget):
         gap = self.sb_gap.value()
         ctol = self.sb_ctol.value()
         avoid = self.cb_avoid.isChecked()
-        with open(DEBUG_FILE, 'a') as f:
-            f.write(time.ctime())
-            f.write('\t')
-            f.write('emit_run'+'\t')
-            f.write(str(gap)+'\t')
-            f.write(str(ctol)+'\t')
-            f.write(str(avoid)+'\t')
-            f.write('\n')
         self.contactRun.emit(gap,ctol,avoid)
         
     @pyqtSlot(list)
@@ -332,15 +302,62 @@ class ManualWindows(QWidget):
         super().__init__()
         self.initUI()
 
-    def initUi(self):
+    def initUI(self):
         self.setWindowTitle('Manual Contact creation')
+        # create groupbox group 1
+        self.gp_grp1 = QGroupBox("Group 1", self)
+        # create lidedit for group name
+        self.le_grp1 = QLineEdit()
+        self.le_grp1.setReadOnly(True)
+        self.le_grp1.setText("Please select a group")
+        # create button for group selection
+        self.bt_grp1 = QPushButton()
+        self.bt_grp1.setIcon(QIcon(os.path.join(img_path,'input.png')))
+
+        self.hbox_grp1 = QHBoxLayout()
+        self.hbox_grp1.addWidget(self.le_grp1)
+        self.hbox_grp1.addWidget(self.bt_grp1)
+        self.gp_grp1.setLayout(self.hbox_grp1)
+
+        # create groupbox group 2
+        self.gp_grp2 = QGroupBox("Group 2", self)
+        # create lidedit for group name
+        self.le_grp2 = QLineEdit()
+        self.le_grp2.setReadOnly(True)
+        self.le_grp2.setText("Please select a group")
+        # create button for group selection
+        self.bt_grp2 = QPushButton()
+        self.bt_grp2.setIcon(QIcon(os.path.join(img_path,'input.png')))
+        self.hbox_grp2 = QHBoxLayout()
+        self.hbox_grp2.addWidget(self.le_grp2)
+        self.hbox_grp2.addWidget(self.bt_grp2)
+        self.gp_grp2.setLayout(self.hbox_grp2)
+
+        # create button OK
+        self.btnOK = QPushButton('Ok')
+        # crate button cancel
+        self.btnCancel = QPushButton('Cancel')
+        # add horizontal layout for buttons
+        self.hbox = QHBoxLayout()
+        self.hbox.addWidget(self.btnCancel)
+        self.hbox.addWidget(self.btnOK)
+
+        # layout
+        layout = QGridLayout()
+        layout.addWidget(self.gp_grp1, 1, 0, 1, 2)
+        layout.addWidget(self.gp_grp2, 2, 0, 1, 2)
+        layout.addLayout(self.hbox, 3, 1)
+        self.setLayout(layout)
+
+        #signal connection
+        self.btnCancel.clicked.connect(self.hide)
 
 class ContactGUI(QWidget):
 
     # define custom signals
     load_compound = pyqtSignal()
     closing = pyqtSignal()
-    export_path = pyqtSignal(str)
+    export_contact = pyqtSignal(str)
 
     def __init__(self):
         super(ContactGUI, self).__init__()
@@ -349,12 +366,13 @@ class ContactGUI(QWidget):
         self.autoWindow = AutoWindows()
         self.autoWindow.setWindowFlags(self.autoWindow.windowFlags() | Qt.WindowStaysOnTopHint)
         self.autoWindow.hide()
+        self.manualWindow = ManualWindows()
+        self.manualWindow.setWindowFlags(self.manualWindow.windowFlags() | Qt.WindowStaysOnTopHint)
+        self.manualWindow.hide()
         self.compound_parts = []
+        self.file_name = ''
 
-    def closeEvent(self, event):
-        print("Fermeture de la fenêtre, suppression des instances...")
-        self.closing.emit()
-        event.accept()  # Ferme la fenêtre """
+
 
     def init_UI(self):
         # Table model
@@ -377,7 +395,7 @@ class ContactGUI(QWidget):
         self.lb_root.setReadOnly(True)
         self.lb_root.setText("Please select a compound")
         self.bt_root = QPushButton()
-        self.bt_root.setText("Load")
+        self.bt_root.setIcon(QIcon(os.path.join(img_path,'input.png')))
         self.bt_root.clicked.connect(self.emit_load_compound)
 
         #=======================
@@ -426,7 +444,8 @@ class ContactGUI(QWidget):
         self.bt_path = QPushButton()
         self.bt_path.setIcon(QIcon(os.path.join(img_path,'folder.png')))
         # create buttons for export
-        self.bt_export = QPushButton("Export", self)
+        self.bt_export = QPushButton()
+        self.bt_export.setIcon(QIcon(os.path.join(img_path,'save.png')))
         # put the bouton in a horizontal layout
         self.hbox = QHBoxLayout()
         self.hbox.addWidget(self.le_export)
@@ -449,10 +468,12 @@ class ContactGUI(QWidget):
 
         # connect signals
         self.bt_contact_auto.clicked.connect(self.openAutoWindow)
+        self.bt_contact_manual.clicked.connect(self.openManualWindow)
         btnOK.clicked.connect(self.close)
         self.cb_parts.stateChanged.connect(self.display_compound_part)
         self.sl_transparency.valueChanged.connect(self.set_compound_part_transparency)
-        self.bt_path.clicked.connect(self.select_export)
+        self.bt_path.clicked.connect(self.select_file)
+        self.bt_export.clicked.connect(self.export)
         
     # slots
     @pyqtSlot(str)
@@ -481,13 +502,28 @@ class ContactGUI(QWidget):
                 gg.eraseGO(p)
 
     @pyqtSlot()
-    def select_export(self):
+    def select_file(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         name, _ = QFileDialog.getSaveFileName(self, "Export file","","Json (*.json)", options=options)
         if name:
             self.le_export.setText(name)
-            self.export_path.emit(name)
+            self.file_name = name
+            with open(DEBUG_FILE, 'a') as f:
+                f.write(time.ctime())
+                f.write('\t')
+                f.write('select_file'+'\t')
+                f.write(str(name)+'\t')
+                f.write('\n')
+
+    @pyqtSlot()
+    def export(self):
+        self.export_contact.emit(self.file_name)
+
+    def closeEvent(self, event):
+        print("Fermeture de la fenêtre, suppression des instances...")
+        self.closing.emit()
+        event.accept()  # Ferme la fenêtre """
 
     # signals emitters
     def emit_load_compound(self):
@@ -504,7 +540,10 @@ class ContactGUI(QWidget):
             self.table_view.setModel(self.model)  
 
     def openAutoWindow(self):
-        self.autoWindow.show()  
+        self.autoWindow.show()
+
+    def openManualWindow(self):
+        self.manualWindow.show()
 
     def receiveData(self, data):
         # This method will be called when the dataReady signal is emitted
