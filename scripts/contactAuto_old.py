@@ -41,7 +41,7 @@ salome.salome_init()
 # contact name regex
 re_name = re.compile(r'_C\d+(.+?)')
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 JSON_FILE = 'E://GIT_REPO/SalomeUtils//debug//contact.json'
 
 class AutoContact(QWidget):

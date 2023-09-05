@@ -11,7 +11,7 @@ from salome.geom import geomBuilder
 geompy = geomBuilder.New()
 salome.salome_init()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class Point():
     def __init__(self, x=0.0, y=0.0, z=0.0):

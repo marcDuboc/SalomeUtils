@@ -28,7 +28,7 @@ try:
     reload(sys.modules['contact.data', 'contact.geom', 'contact.tree', 'contact.interface'])
     from contact.data import ContactManagement,GroupItem
     from contact.geom import ParseShapesIntersection
-    from contact.tree import Tree
+    from contact.tree import Tree,TreeItem
     from contact.interface import ContactGUI
     
 except:
@@ -45,11 +45,12 @@ geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class ContactAuto(QObject):
     compound_selected = pyqtSignal(str)
     parts_selected = pyqtSignal(list)
+    existing_parts = pyqtSignal(list)
 
     def __init__(self):
         super(ContactAuto, self).__init__()
@@ -63,6 +64,7 @@ class ContactAuto(QObject):
 
         self.compound_selected.connect(self.Gui.on_compound_selected)
         self.Gui.load_compound.connect(self.select_compound)
+        self.existing_parts.connect(self.Gui.set_compounds_parts)
         
     def __del__(self):
         del self.Tree
@@ -86,13 +88,10 @@ class ContactAuto(QObject):
             # parse for existing contacts
             self.Tree.get_objects(id)
             existing_contact = self.Tree.parse_for_contact()
-            print('existing contact',existing_contact)
 
-            with open(DEBUG_FILE, 'a') as f:
-                f.write(time.ctime())
-                f.write(str(existing_contact))
-                f.write('\n')
-                
+            # emit existing parts to Gui
+            self.existing_parts.emit([x.get_sid() for x in self.Tree.objects])
+
             # add existing contacts to contactManager
             self.Contact.create_from_tree(existing_contact)
 
@@ -122,11 +121,6 @@ class ContactAuto(QObject):
                 part_ids.append(id)
                 self.parts.append(id)
             self.parts_selected.emit(part_ids)
-        with open(DEBUG_FILE, 'a') as f:
-            f.write(time.ctime())
-            f.write("select_parts\t")
-            f.write(str(self.parts))
-            f.write('\n')
 
     @pyqtSlot(float, float, bool)
     def process_contact(self, tol, angle, isAuto):
@@ -146,16 +140,14 @@ class ContactAuto(QObject):
             grp1.create(contact_pairs[i][0][0], contact_pairs[i][0][1])
             grp2.create(contact_pairs[i][1][0], contact_pairs[i][1][1])
 
-            # TODO check if contact already exists and other special checks with groupitem
-
-            self.Contact.create_from_intersection(grp1, grp2)
+            self.Contact.create_from_groupItem(grp1, grp2)
 
         # update table
         self.Gui.set_data(self.Contact.to_table_model())
 
     @pyqtSlot(str,str)
-    def manual_contact(self, group_sid_1, group_sid_2):
-        self.Contact.create_from_groups(group_sid_1, group_sid_2)
+    def manual_contact(self, group_sid_1:str, group_sid_2:str):
+        self.Contact.create_from_groupsID(group_sid_1, group_sid_2)
 
 
 class MyDockWidget(QDockWidget):

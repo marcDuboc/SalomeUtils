@@ -19,7 +19,7 @@ Gst = geomtools.GeomStudyTools(StudyEditor)
 Gg = salome.ImportComponentGUI("GEOM")
 Builder = salome.myStudy.NewBuilder()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class GroupItem():
     Geompy = geomBuilder.New()
@@ -160,11 +160,6 @@ class ContactPair():
     - if not yet created, create a physical group on the master for bonded and sliding contact.  
     """
 
-
-
-    # get the study builder
-    
-
     # pattern for subshape name
     subshape_name_pattern = re.compile(r"^_C[A-D]\d{1,4}[MS]$")
 
@@ -184,7 +179,6 @@ class ContactPair():
         if id in ContactPair.ids_available:
             self.id_instance=id
             ContactPair.ids_available.remove(self.id_instance)
-        
         else:
             self.id_instance = ContactPair.ids_available.pop(0)
 
@@ -236,9 +230,9 @@ class ContactPair():
         return str(self.to_dict())
     
     def _create_physical_group(self,group_item: GroupItem):
-        common_name = '_C' + str(self.id_instance)
         c_type = self.type_dict[self.type]
-
+        common_name = '_C' + c_type + str(self.id_instance)
+        
         if len(self.items)==1:
             suffix = 'M'
             color = self.master_color
@@ -247,12 +241,7 @@ class ContactPair():
             suffix = 'S'
             color = self.slave_color
 
-        name = common_name + c_type + suffix
-
-        with open(DEBUG_FILE, 'a') as f:
-            f.write(time.ctime()+"\t")
-            f.write("group item" + str(group_item.type)+ "\t" + str(group_item.get_parent()))
-            f.write('\n')
+        name = common_name + suffix
 
         group = Geompy.CreateGroup(group_item.get_parent(), group_item.type)
         indices = group_item.subshapes_indices
@@ -384,9 +373,7 @@ class ContactManagement():
     - export contact groups to list
 
     - @creation TODO:
-                - check if contact pairs already exist
                 - swap master and slave if necessary
-
     """
 
     def __init__(self):
@@ -402,70 +389,87 @@ class ContactManagement():
         main_shape = group_obj.GetMainShape()
         return Geompy.SubShapes(main_shape, indices)
     
+    def _does_contact_pairs_exist(self, group_1:GroupItem, group_2:GroupItem):
+        for pairs in self._contacts:
+            if pairs.items[0] == group_1 and pairs.items[1] == group_2:
+                return True
+            elif pairs.items[0] == group_2 and pairs.items[1] == group_1:
+                return True
+            else:
+                return False
+    
     # method to be used with autotools
-    def create_from_intersection(self, group_1:GroupItem, group_2:GroupItem):
-        c1 = group_1
-        c2 = group_2
+    def create_from_groupItem(self, group_1:GroupItem, group_2:GroupItem):
+        # check if the contact already exists
+        if self._does_contact_pairs_exist(group_1, group_2):
+            raise ValueError("Contact already exists")
+        else:
+            group_pairs = ContactPair()
+            group_pairs.add_items(group_1)
+            group_pairs.add_items(group_2)
+            self._contacts.append(group_pairs)
 
-        group_pairs = ContactPair()
-        group_pairs.add_items(c1)
-        group_pairs.add_items(c2)
-        self._contacts.append(group_pairs)
-
-        # show the group
-        self.show(group_pairs.id_instance)
+            # show the group
+            self.show(group_pairs.id_instance)
 
     # create the contact group from the tree. Run once at script launch 
     # the naming convention is _C<type><id><MS>   
     # contact_from_tree is a dict with the following structure: {id: {master:GEOM_Obj, slave:GEOM_Obj}}
     # id is extracted from the name of the dict keys name
-
     def create_from_tree(self, contact_from_tree:dict()):
         for k,v in contact_from_tree.items():
-            #get the id from the name
-            id=v['pair_id']
-
-            cp = ContactPair(id)
-
-            cp.name = k
-            # extract the type from the name
-            type = k[2]
-            reversed_dict = {v: k for k, v in ContactPair.type_dict.items()}
-            cp.type = reversed_dict[type]
-
+            # create group item
             ci1 = GroupItem()
-            ci1.create_from_group(v['master'])
-
             ci2 = GroupItem()
+            ci1.create_from_group(v['master'])
             ci2.create_from_group(v['slave'])
 
-            cp.groups_sid=[v['master'],v['slave']]
+            if self._does_contact_pairs_exist(ci1,ci2):
+                raise ValueError("Contact already exists")
+            
+            else:
+                # create contact pair
+                id=v['pair_id']
+                cp = ContactPair(id)
+                cp.name = k
+                # extract the type from the name
+                type = k[2]
+                reversed_dict = {v: k for k, v in ContactPair.type_dict.items()}
+                cp.type = reversed_dict[type]
+                cp.groups_sid=[v['master'],v['slave']]
+                cp.items=[ci1,ci2]
+                cp.completed = True
+                cp.master = 0
+                cp._reset_name_master_slave()
+                self._contacts.append(cp)
 
-            cp.items=[ci1,ci2]
-
-            cp.completed = True
-            cp.master = 0
-
-            cp._reset_name_master_slave()
-            self._contacts.append(cp)
-
-            # show the group
-            self.show(cp.id_instance)
+                # show the group
+                self.show(cp.id_instance)
 
     # create contact manually by selecting 2 groups. the original groups are deleted. New group are created using contactPair class. 
-    def create_from_groups(self, group_1_sid:str, group_2_sid:str):
+    def create_from_groupsID(self, group_1_sid:str, group_2_sid:str):
 
         # get the shapes from the group
-        shapes_1 = self._get_subshape_from_group(group_1_sid)
-        shapes_2 = self._get_subshape_from_group(group_2_sid)
+        sub_1 = self._get_subshape_from_group(group_1_sid)
+        sub_2 = self._get_subshape_from_group(group_2_sid)
 
-        # create contact pair
-        self.create_from_shapes(shapes_1, shapes_2)
+       # create group item
+        grp1 = GroupItem()
+        grp2= GroupItem()
+        grp1.create(group_1_sid, sub_1)
+        grp2.create(group_2_sid, sub_2)
 
-        # delete the original groups
-        for id in (group_1_sid, group_2_sid):
-            Gst.removeFromStudy(id)
-            Gst.eraseShapeByEntry(id)
+        # check if the contact already exists
+        if self._does_contact_pairs_exist(grp1, grp2):
+            raise ValueError("Contact already exists")
+        else:
+            # create contact pair
+            self.create_from_groupItem(grp1, grp2)
+
+            # delete the original groups
+            for id in (group_1_sid, group_2_sid):
+                Gst.removeFromStudy(id)
+                Gst.eraseShapeByEntry(id)
 
     def get_all_pairs(self):
         return self._contacts
@@ -502,40 +506,24 @@ class ContactManagement():
                 self._contacts.remove(pairs)
                 pairs.delete()
                 break
-            
-        with open(DEBUG_FILE, 'a') as f:
-            msg = "delete_by_id: id: {}".format(id)
-            f.write(time.ctime())
-            f.write(msg)
-            f.write('\n')
-        salome.sg.updateObjBrowser()
    
     # show pairs 
-    def show(self, id, transparency=0.8):
+    def show(self, id):
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.visible = True
                 for sid in pairs.get_groups_sid():
                     salome.sg.Display(sid)
-
-                parents_sid = pairs.get_parents_sid()
-                for sid in parents_sid:
-                    salome.sg.Display(sid)
-                    Gg.setTransparency(sid,transparency)
+                    Gg.setDisplayMode(sid,2)
                 break
 
     # hide pairs                
     def hide(self, id):
         for pairs in self._contacts:
             if pairs.id_instance == id:
-                groups_sid = pairs.get_groups_sid()
-                for sid in groups_sid:
-                    salome.sg.Erase(sid)
-
-                parents_sid = pairs.get_parents_sid()
-                for sid in parents_sid:
-                    Gg.setTransparency(sid,0)
-                    salome.sg.Erase(sid)
+                pairs.visible = False
+                for sid in pairs.get_groups_sid():
+                    Gg.eraseGO(sid)
                 break
 
     # export contact pairs to list
@@ -552,12 +540,6 @@ class ContactManagement():
 
     # hide/show pairs
     def hideshow_by_id(self,id:int,value:bool):
-        with open(DEBUG_FILE, 'a') as f:
-            msg = "hideshow_by_id: id: {}, value: {}".format(id,value)
-            f.write(time.ctime())
-            f.write(msg)
-            f.write('\n')
-
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 if value:

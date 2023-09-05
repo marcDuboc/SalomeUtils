@@ -7,16 +7,19 @@
 import os
 import time
 import inspect
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout, QComboBox, QItemDelegate, QLabel, QLineEdit,QTableView,QStyle, QGroupBox, QHBoxLayout,QDoubleSpinBox, QCheckBox
+from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout, QComboBox, QItemDelegate, QLabel, QLineEdit,QTableView,QStyle, QGroupBox, QHBoxLayout,QDoubleSpinBox, QCheckBox,QSlider,QFileDialog
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal, pyqtSlot, QEvent
+import salome
 
 
 root_path= os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 img_path = os.path.join(root_path, 'img')
 
+salome.salome_init()
+gg = salome.ImportComponentGUI("GEOM")
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 
 class TypeDelegate(QItemDelegate):
@@ -313,7 +316,7 @@ class AutoWindows(QWidget):
             f.write(str(avoid)+'\t')
             f.write('\n')
         self.contactRun.emit(gap,ctol,avoid)
-
+        
     @pyqtSlot(list)
     def set_parts(self, parts):
         self.partSelected = parts
@@ -323,7 +326,6 @@ class AutoWindows(QWidget):
         else:
             msg = f'{nb_parts} parts selected'
         self.le_p.setText(msg)
-
 
 class ManualWindows(QWidget):
     def __init__(self):
@@ -338,6 +340,7 @@ class ContactGUI(QWidget):
     # define custom signals
     load_compound = pyqtSignal()
     closing = pyqtSignal()
+    export_path = pyqtSignal(str)
 
     def __init__(self):
         super(ContactGUI, self).__init__()
@@ -346,6 +349,7 @@ class ContactGUI(QWidget):
         self.autoWindow = AutoWindows()
         self.autoWindow.setWindowFlags(self.autoWindow.windowFlags() | Qt.WindowStaysOnTopHint)
         self.autoWindow.hide()
+        self.compound_parts = []
 
     def closeEvent(self, event):
         print("Fermeture de la fenêtre, suppression des instances...")
@@ -366,6 +370,7 @@ class ContactGUI(QWidget):
         self.table_view.setItemDelegateForColumn(4, self.swapItem)
         self.table_view.setItemDelegateForColumn(3, self.hideShowItem)
 
+        #=======================
         # select root component
         self.l_root = QLabel("Root compound: ", self)
         self.lb_root = QLineEdit()
@@ -375,40 +380,114 @@ class ContactGUI(QWidget):
         self.bt_root.setText("Load")
         self.bt_root.clicked.connect(self.emit_load_compound)
 
+        #=======================
+        # create groupbox for parts
+        self.gp_parts = QGroupBox("Parts", self)
+        # add checkbox for parts display
+        self.cb_parts = QCheckBox("Display", self)
+        self.cb_parts.setChecked(True)
+        # add slider for parts transparency
+        self.l_transparency = QLabel("Transparency: ", self)
+        self.sl_transparency = QSlider(Qt.Horizontal)
+        self.sl_transparency.setMinimum(0)
+        self.sl_transparency.setMaximum(100)
+        self.sl_transparency.setValue(80)
+        self.sl_transparency.setTickPosition(QSlider.TicksBelow)
+        self.sl_transparency.setTickInterval(10)
+        # put the checkbox in a vertical layout
+        self.vbox = QVBoxLayout()
+        self.vbox.addWidget(self.cb_parts)
+        self.vbox.addWidget(self.l_transparency)
+        self.vbox.addWidget(self.sl_transparency)
+        self.gp_parts.setLayout(self.vbox)
+
+        #=======================
         # group for contact creation
         self.gp_contact = QGroupBox("Create contact", self)
-
         # create buttons for contact creation
         self.bt_contact_auto = QPushButton("Auto", self)
         self.bt_contact_manual = QPushButton("Manual", self)
-
         # put the bouton in a horizontal layout
         self.hbox = QHBoxLayout()
         self.hbox.addWidget(self.bt_contact_auto)
         self.hbox.addWidget(self.bt_contact_manual)
         self.gp_contact.setLayout(self.hbox)
-
         # create button OK	
-        btnOK = QPushButton('Ok')
+        btnOK = QPushButton('Quit')
 
+        #=======================
+        # add groupbox for export
+        self.gp_export = QGroupBox("Export", self)
+        # create lidedit for export path
+        self.le_export = QLineEdit()    
+        self.le_export.setReadOnly(True)
+        self.le_export.setText("Please select a path")
+        # create button for export path
+        self.bt_path = QPushButton()
+        self.bt_path.setIcon(QIcon(os.path.join(img_path,'folder.png')))
+        # create buttons for export
+        self.bt_export = QPushButton("Export", self)
+        # put the bouton in a horizontal layout
+        self.hbox = QHBoxLayout()
+        self.hbox.addWidget(self.le_export)
+        self.hbox.addWidget(self.bt_path)
+        self.hbox.addWidget(self.bt_export)
+        self.gp_export.setLayout(self.hbox)
+
+        #=======================
         # layout
         layout = QGridLayout()
         layout.addWidget(self.l_root, 1, 0)
         layout.addWidget(self.lb_root, 2, 0)
         layout.addWidget(self.bt_root, 2, 1)
         layout.addWidget(self.table_view, 3, 0, 1, 2)
-        layout.addWidget(self.gp_contact, 4, 0, 1, 2)
-        layout.addWidget(btnOK, 5, 1)
+        layout.addWidget(self.gp_parts, 4, 0, 1, 2)
+        layout.addWidget(self.gp_contact, 5, 0, 1, 2)
+        layout.addWidget(self.gp_export, 6, 0, 1, 2)
+        layout.addWidget(btnOK, 7, 1)
         self.setLayout(layout)
 
         # connect signals
         self.bt_contact_auto.clicked.connect(self.openAutoWindow)
         btnOK.clicked.connect(self.close)
+        self.cb_parts.stateChanged.connect(self.display_compound_part)
+        self.sl_transparency.valueChanged.connect(self.set_compound_part_transparency)
+        self.bt_path.clicked.connect(self.select_export)
         
     # slots
     @pyqtSlot(str)
     def on_compound_selected(self, master_compound_name):
         self.lb_root.setText(master_compound_name)
+
+    @pyqtSlot(list)
+    def set_compounds_parts(self, parts):
+        self.compound_parts = parts 
+        for p in parts:
+            salome.sg.Display(p)
+            gg.setTransparency(p,0.8)
+
+    @pyqtSlot(int)
+    def set_compound_part_transparency(self, transparency):
+        for p in self.compound_parts:
+            gg.setTransparency(p,transparency/100)
+
+    @pyqtSlot(int)
+    def display_compound_part(self, display):
+        for p in self.compound_parts:
+            if display>0:
+                salome.sg.Display(p)
+                gg.setTransparency(p,self.sl_transparency.value()/100)
+            else:
+                gg.eraseGO(p)
+
+    @pyqtSlot()
+    def select_export(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        name, _ = QFileDialog.getSaveFileName(self, "Export file","","Json (*.json)", options=options)
+        if name:
+            self.le_export.setText(name)
+            self.export_path.emit(name)
 
     # signals emitters
     def emit_load_compound(self):

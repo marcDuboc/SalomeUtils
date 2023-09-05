@@ -29,6 +29,9 @@ class TreeItem():
     def parent_id(self):
         return self.id[:-1]
     
+    def get_sid(self):
+        return tuple_to_id(self.id)
+    
     def __repr__(self):
         return f'name={self.name}, id={tuple_to_id(self.id)}'
 
