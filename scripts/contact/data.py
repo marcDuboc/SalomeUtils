@@ -13,13 +13,14 @@ import GEOM
 from salome.geom import geomBuilder, geomtools
 from salome.kernel.studyedit import getStudyEditor
 
+
 Geompy = geomBuilder.New()
 StudyEditor = getStudyEditor()
 Gst = geomtools.GeomStudyTools(StudyEditor)
 Gg = salome.ImportComponentGUI("GEOM")
 Builder = salome.myStudy.NewBuilder()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class GroupItem():
     shape_allowable_type = (Geompy.ShapeType["FACE"], Geompy.ShapeType["EDGE"], Geompy.ShapeType["VERTEX"])
@@ -28,6 +29,9 @@ class GroupItem():
         self.type = None
         self.shape_sid = None
         self.subshapes_indices = []
+
+    def __repr__(self) -> str:
+        return "GroupItem(shape_sid={}, subshapes_indices={}, type={})".format(self.shape_sid, self.subshapes_indices,self.type)
 
     def __eq__(self, __value: object) -> bool:
         shape=salome.IDToObject(self.shape_sid)
@@ -52,9 +56,7 @@ class GroupItem():
     def create(self, shape_sid:str, subshape_indices:list):
         self.shape_sid = shape_sid
         self.subshapes_indices = subshape_indices
-        subobj = Geompy.GetSubShape(salome.IDToObject(shape_sid), subshape_indices)
-        if type(subobj) == list:
-            subobj = subobj[0]
+        subobj = Geompy.GetSubShape(salome.IDToObject(shape_sid), [subshape_indices[0]])
         self.type = subobj.GetShapeType()._v
 
     def create_from_group(self, group_sid:str):
@@ -257,7 +259,7 @@ class ContactPair():
         name = common_name + suffix
 
         group = Geompy.CreateGroup(group_item.get_parent(), group_item.type)
-        indices = group_item.subshapes_indices
+        indices = group_item.subshapes_indices.copy()
 
         Geompy.AddObject(group, indices.pop(0))
         if len(indices) > 0:
@@ -407,8 +409,12 @@ class ContactManagement():
     def _does_contact_pairs_exist(self, group_1:GroupItem, group_2:GroupItem):
         for pairs in self._contacts:
             if pairs.items[0] == group_1 and pairs.items[1] == group_2:
+                print("contact already exists")
+                print(pairs.items[0],group_1,pairs.items[1],group_2)
                 return True
             elif pairs.items[0] == group_2 and pairs.items[1] == group_1:
+                print("contact already exists")
+                print(pairs.items[0],group_2,pairs.items[1],group_1)
                 return True
             else:
                 return False
@@ -418,12 +424,12 @@ class ContactManagement():
         # check if the contact already exists
         if self._does_contact_pairs_exist(group_1, group_2):
             return False
+        
         else:
             group_pairs = ContactPair()
             group_pairs.add_items(group_1)
             group_pairs.add_items(group_2)
             self._contacts.append(group_pairs)
-
             # show the group
             self.show(group_pairs.id_instance)
             return True
@@ -566,13 +572,34 @@ class ContactManagement():
 
     # change type of contact
     def change_type_by_id(self,id:int,value:str):
-        with open(DEBUG_FILE, 'a') as f:
+        """with open(DEBUG_FILE, 'a') as f:
             msg = " change_type_by_id: id: {}, value: {}".format(id,value)
             f.write(time.ctime())
             f.write(msg)
-            f.write('\n')
+            f.write('\n')"""
 
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.set_type(value)
-                break
+                
+    def check_adjacent_slave_group(self):
+        """
+        check if each part has more than one adjacent slave group
+        """
+        parts=dict()
+        # find all the parts
+        for contact in self._contacts:
+
+            for item in contact.items:
+                if item.shape_sid not in parts.keys():
+                    parts[item.shape_sid]=dict(master=[],slave=[])
+            names = contact.get_group_names()
+            for name in names:
+                if name[-1]=='M':
+                    parts[item.shape_sid]['master'].append(name)
+                elif name[-1]=='S':
+                    parts[item.shape_sid]['slave'].append(name)
+
+
+
+

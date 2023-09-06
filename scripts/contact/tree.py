@@ -8,7 +8,7 @@ import re
 import salome
 import GEOM
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 def id_to_tuple(id):
     """
@@ -78,7 +78,7 @@ class Tree:
         compound_id = id_to_tuple(compound_id)
         length_compound_id = len(compound_id)
 
-        self.objects = list()
+        objects = list()
         component= salome.myStudy.FindComponentID(self.root)
         iter = salome.myStudy.NewChildIterator(component)
         iter.InitEx(True) # init recursive mode
@@ -94,10 +94,11 @@ class Tree:
                 ok, obj_type = self._check_type(sobj.GetID())
                 if ok:
                     item=TreeItem(id,sobj.GetName(),obj_type)
-                    self.objects.append(item)
+                    objects.append(item)
             iter.Next()
-
-        return self.objects
+            
+        self.objects = objects
+        return objects
     
     def get_parts(self,type=[ObjectType.SOLID,ObjectType.SUBSHAPE]):
         """

@@ -19,7 +19,7 @@ img_path = os.path.join(root_path, 'img')
 salome.salome_init()
 gg = salome.ImportComponentGUI("GEOM")
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 
 class TypeDelegate(QItemDelegate):
@@ -152,25 +152,25 @@ class TableModel(QAbstractTableModel):
 
     def setData(self, index, value, role=Qt.EditRole):		
         if role in (Qt.DisplayRole, Qt.EditRole):
-            with open(DEBUG_FILE, 'a') as f:
+            """with open(DEBUG_FILE, 'a') as f:
                 f.write(time.ctime())
                 f.write('\t')
                 f.write('setData'+'\t')
                 f.write(str(index.row())+'\t')
                 f.write(str(index.column())+'\t')
                 f.write(str(value))
-                f.write('\n')
+                f.write('\n')"""
 
             # if value is blank
             if value in ('',' '):
                 return False
 
             self._data[index.row()][index.column()] = value
-            with open(DEBUG_FILE, 'a') as f:
+            """with open(DEBUG_FILE, 'a') as f:
                 f.write(time.ctime())
                 f.write('\t')
                 f.write(str(self._data)+'\t')
-                f.write('\n')
+                f.write('\n')"""
 
         return True
         
@@ -240,13 +240,17 @@ class AutoWindows(QWidget):
         # create groupbox options
         self.gp_options = QGroupBox("Options", self)
 
-        # create checkbox avoid slave neighborhood
-        self.cb_avoid = QCheckBox("Avoid self slave neighborhood", self)
-        self.cb_avoid.setChecked(True)
+        # create checkbox merge by part
+        self.cb_merge_by_part = QCheckBox("merge group by part", self)
+        self.cb_merge_by_part.setChecked(True)
+        # create checkbox merge by proximity
+        self.cb_merge_by_proximity = QCheckBox("merge group by proximity", self)
+        self.cb_merge_by_proximity.setChecked(False)
 
         # put the checkbox in a horizontal layout
         self.hbox_options = QHBoxLayout()
-        self.hbox_options.addWidget(self.cb_avoid)
+        self.hbox_options.addWidget(self.cb_merge_by_part)
+        self.hbox_options.addWidget(self.cb_merge_by_proximity)
         self.gp_options.setLayout(self.hbox_options)
 
         # add run button
@@ -276,6 +280,9 @@ class AutoWindows(QWidget):
         self.bt_p.clicked.connect(self.emit_part_selection)
         self.bt_run.clicked.connect(self.emit_run)
         self.bt_cancel.clicked.connect(self.hide)
+        self.cb_merge_by_part.stateChanged.connect(self.change_merge_by_part)
+        self.cb_merge_by_proximity.stateChanged.connect(self.change_merge_by_proximity)
+
     
     def emit_part_selection(self):
         self.partSelection.emit()
@@ -284,8 +291,8 @@ class AutoWindows(QWidget):
         # get the values
         gap = self.sb_gap.value()
         ctol = self.sb_ctol.value()
-        avoid = self.cb_avoid.isChecked()
-        self.contactRun.emit(gap,ctol,avoid)
+        merge_by_part = self.cb_merge_by_part.isChecked()
+        self.contactRun.emit(gap,ctol,merge_by_part)
         
     @pyqtSlot(list)
     def set_parts(self, parts):
@@ -297,6 +304,16 @@ class AutoWindows(QWidget):
             msg = f'{nb_parts} parts selected'
         self.le_p.setText(msg)
 
+    @pyqtSlot(int)
+    def change_merge_by_part(self):
+        if self.cb_merge_by_part.isChecked():
+            self.cb_merge_by_proximity.setChecked(False)
+    
+    @pyqtSlot(int)
+    def change_merge_by_proximity(self):
+        if self.cb_merge_by_proximity.isChecked():
+            self.cb_merge_by_part.setChecked(False)
+            
 class ManualWindows(QWidget):
     def __init__(self):
         super().__init__()

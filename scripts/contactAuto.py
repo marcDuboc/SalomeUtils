@@ -42,7 +42,7 @@ geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class ContactAuto(QObject):
     compound_selected = pyqtSignal(str)
@@ -127,24 +127,30 @@ class ContactAuto(QObject):
             self.parts_selected.emit(part_ids)
 
     @pyqtSlot(float, float, bool)
-    def process_contact(self, tol, angle, isAuto):
+    def process_contact(self, gap, angle, merge_by_part):
         contact_pairs = []
         combine = list(itertools.combinations(self.parts, 2))
 
         for i in range(len(combine)):
-            res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=tol)
+            res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=gap,merge_by_part=merge_by_part)
             if res:
-                for c in candidate:
-                    contact_pairs.append(c)
+                contact_pairs.extend(candidate)
+        
+        with open(DEBUG_FILE, 'a') as f:
+            f.write(time.ctime() + '\t')
+            f.write(str(contact_pairs)+'\n')
 
         # add new contacts to contactManager
-        for i in range(len(contact_pairs)):
+        for c in contact_pairs:
             grp1 = GroupItem()
             grp2 = GroupItem()
-            grp1.create(contact_pairs[i][0][0], contact_pairs[i][0][1])
-            grp2.create(contact_pairs[i][1][0], contact_pairs[i][1][1])
+            grp1.create(c[0][0], c[0][1])
+            grp2.create(c[1][0], c[1][1])
 
             self.Contact.create_from_groupItem(grp1, grp2)
+
+        # debug
+        self.Contact.check_adjacent_slave_group()
 
         # update table
         self.Gui.set_data(self.Contact.to_table_model())

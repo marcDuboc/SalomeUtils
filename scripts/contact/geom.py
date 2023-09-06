@@ -1,17 +1,22 @@
 import numpy as np
 import time
 import itertools
+from collections import defaultdict
 import copy
 import GEOM
 import salome
 from salome.geom import geomBuilder
 
+try:
+    from .utils import CombinePairs
+except:
+    from utils import CombinePairs
 
 # Detect current study
 geompy = geomBuilder.New()
 salome.salome_init()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
 
 class Point():
     def __init__(self, x=0.0, y=0.0, z=0.0):
@@ -250,7 +255,7 @@ class ParseShapesIntersection():
         subshapes=list()
         for i in range(len(subshape_list)):
             kos = str(geompy.KindOfShape(subshape_list[i])[0])
-
+            
             if kos in ParseShapesIntersection.Shape_allowed:
                 subshapes.append(subshape_list[i])
 
@@ -259,14 +264,14 @@ class ParseShapesIntersection():
 
         return subshapes
 
-    def _get_shapeSid_and_subshapesIndices(self, subshapes:GEOM._objref_GEOM_Object):
+    """def _get_shapeSid_and_subshapesIndices(self, subshapes:GEOM._objref_GEOM_Object):
         parent_sid = subshapes.GetMainShape().GetStudyEntry()
         subshape_index = subshapes.GetSubShapeIndices()
 
         if type(subshape_index)!=list:
             subshape_index = list(subshape_index)
 
-        return (parent_sid, subshape_index)
+        return (parent_sid, subshape_index)"""
         
     def _get_contact_area(self, subobj1, subobj2):
         common_area = geompy.MakeCommon(subobj1, subobj2)
@@ -277,25 +282,152 @@ class ParseShapesIntersection():
         area = geompy.BasicProperties(shape)
         return area[1]
     
-    def _merge_subshapes_per_part(self, candidates:list):
+    def _master_and_slave_from_area(self, candidates:list):
+        ms=list()
+        for c in candidates:
+            area_0 = 0.0
+            area_1 = 0.0
+
+            # get the area of each subshapes
+            for s in c[0]:
+                area_0 += self._get_shape_area(s)
+            for s in c[1]:
+                area_1 += self._get_shape_area(s)
+
+            if area_0 >= area_1:
+                m= c[0]
+                s= c[1]
+            else:
+                m= c[1]
+                s= c[0]
+            ms.append((m,s))
+
+        return tuple(ms)
+    
+    def _extract_sid_and_indices(self,candidate:list):
+        res = list()
+        for c in candidate:
+            # sid
+            part0= c[0][0].GetMainShape().GetStudyEntry()
+            part1= c[1][0].GetMainShape().GetStudyEntry()
+
+            # subshape indices
+            subshape_index0 = [c.GetSubShapeIndices()[0] for c in c[0]]
+            subshape_index1 = [c.GetSubShapeIndices()[0] for c in c[1]]
+
+            res.append(((part0,subshape_index0),(part1,subshape_index1)))
+        return res
+
+    def _merge_subshapes_by_part(self, candidates:list):
         """
         Merge subshapes into one group per part
         """
-        part_list= {x[i][0] for i in (0,1) for x in candidates}
-
-        part_1 = list()
-        part_2 = list()
+        c0=list()
+        c1=list()
 
         for c in candidates:
-            if c[0][0] not in part_1:
-                part_1.append(c[0][0])
+            c0.extend(c[0])
+            c1.extend(c[1])
 
-            if c[1][0] not in part_2:
-                part_2.append(c[1][0])
+        return ((list(set(c0)),list(set(c1))),)
+
+    def _merge_subshapes_by_proximity(self, candidates:list):
+        """
+        Merge subshapes into one group per proximity
+        """
+        def check_proximity(c:list):
+            c_id = [x.GetSubShapeIndices()[0] for x in c]
+            part_con=list()
+            comb_c = list(itertools.combinations(c, 2))
+            CombPairs = CombinePairs()
+            for c in comb_c:
+                try:
+                    connected, _, _ = geompy.FastIntersect(c[0], c[1], 0.0)
+                except:
+                    connected = False
+
+                if connected:
+                    id_a = c[0].GetSubShapeIndices()[0]
+                    id_b = c[1].GetSubShapeIndices()[0]
+                    part_con.append((id_a,id_b))
+
+                    if id_a in c_id:
+                        c_id.remove(id_a)
+
+                    if id_b in c_id:
+                        c_id.remove(id_b)
+            
+            if len(part_con)>1:
+                part_con = CombPairs.combine(part_con)
+
+            if len(c_id) > 0:
+                part_con.append(tuple(c_id) )
+
+            return part_con
         
-        return part_1, part_2
-    
-    def intersection(self, obj1_sid:str, obj2_sid:str, gap=0.0, tol=0.01):
+        pairs_AB = list()
+
+        # get all subshape 
+        c0=list()
+        c1=list()
+
+        #dict of subshape indices
+        subshape_dict0 = dict()
+        subshape_dict1 = dict()
+
+        for c in candidates:
+            #print(c)
+            id0 = c[0][0].GetSubShapeIndices()[0]
+            subshape_dict0[id0] = c[0][0]
+            id1 = c[1][0].GetSubShapeIndices()[0]
+            subshape_dict1[id1] = c[1][0]
+            pairs_AB.append((id0,id1))
+            c0.extend(c[0])
+            c1.extend(c[1])
+
+        #print(subshape_dict1)
+        c0= list(set(c0))
+        c1= list(set(c1))
+
+        # check by proximity
+        A_connection = check_proximity(c0)
+        B_connection = check_proximity(c1)
+
+        # regroup by proximity and connectivity
+        regroup_AB = list()
+
+        def find(list:list,value:int):
+            for l in list:
+                if value in l:
+                    return l
+            return None
+        
+        for a, b in pairs_AB:
+            find_a = find(A_connection,a)
+            find_b = find(B_connection,b)
+            regroup_AB.append((find_a,find_b))
+
+        # set back the is to salome object
+        regroup_AB = list(set(regroup_AB))
+
+        #print(pairs_AB)
+        #print(A_connection)
+        #print(B_connection)
+        #print(regroup_AB)
+
+        res=list()
+        for con in regroup_AB:
+            sub0=[]
+            sub1=[]
+            for a in con[0]:
+                sub0.append(subshape_dict0[a])
+            for b in con[1]:
+                sub1.append(subshape_dict1[b])
+            res.append((sub0,sub1))
+
+        return res      
+
+    def intersection(self, obj1_sid:str, obj2_sid:str, gap=0.0, tol=0.01, merge_by_part=False, merge_by_proximity=True):
         """
         Get the intersection between two shapes
         """
@@ -304,6 +436,7 @@ class ParseShapesIntersection():
 
         self.Coincidence.gap = gap
         candidates = list()
+        group = list()
         has_contact = False
 
         try:
@@ -321,134 +454,50 @@ class ParseShapesIntersection():
                 for c in combinaison:
                     try:
                         connected, _, _ = geompy.FastIntersect(c[0], c[1], gap)
-
+                    
                     except:
                         connected = False
 
                     if connected:
-
                         # check for shape coincidence
                         if self.Coincidence.are_coincident(c[0], c[1]):
                             has_contact = True
-                            m= self._get_shapeSid_and_subshapesIndices(c[0])
-                            s= self._get_shapeSid_and_subshapesIndices(c[1])
-                            candidates.append((m,s))
-
+                            candidates.append(([c[0]],[c[1]]))
                         else:
                         # check by contact area
                             area = self._get_contact_area(c[0], c[1])
 
                             if area > 0:
-
                                 has_contact = True
-                                if self._get_shape_area(c[0]) >= self._get_shape_area(c[1]):
-                                    m= self._get_shapeSid_and_subshapesIndices(c[0])
-                                    s= self._get_shapeSid_and_subshapesIndices(c[1])
+                                candidates.append(([c[0]],[c[1]]))
 
-                                else:
-                                    m= self._get_shapeSid_and_subshapesIndices(c[1])
-                                    s= self._get_shapeSid_and_subshapesIndices(c[0])
-
-                                candidates.append((m,s))
+                if has_contact:
+                    # option to merge subshapes by part
+                    #print('nb_contact',len(candidates))
+                    if merge_by_part:
+                        candidates = self._merge_subshapes_by_part(candidates)
+                        #print('nb_merge',len(candidates))
                     
-                return has_contact, tuple(candidates)
+                    elif merge_by_proximity:
+                        candidates = self._merge_subshapes_by_proximity(candidates)
+                        #print('nb_merge',len(candidates))
+
+                    # defined the master and slave
+                    ms = self._master_and_slave_from_area(candidates)
+                    #print('nb ms',len(ms))
+
+                    # extract the sid and subshape indices
+                    group = self._extract_sid_and_indices(ms)
+                    #print('nb group',len(group))
+                    
+                return has_contact,tuple(group)
 
             else:
                 return has_contact, None
-            
         except:
             return has_contact, None
 
-    def intersection_dev(self, obj1_sid:str, obj2_sid:str, gap=0.0, tol=0.01):
-        """
-        Get the intersection between two shapes
-        """
-
-        obj1 = salome.IDToObject(obj1_sid)
-        obj2 = salome.IDToObject(obj2_sid)
-
-        self.Coincidence.gap = gap
-        candidates = list()
-        sub_0 = list()
-        sub_1 = list()
-        has_contact = False
-        test= list()
-
-        try:
-            isconnect, res1, res2 = geompy.FastIntersect(obj1, obj2, gap)
-
-            if isconnect:
-                uncheck_1 = geompy.SubShapes(obj1, res1)
-                uncheck_2 = geompy.SubShapes(obj2, res2)
-                contact_1 = self._parse_for_allow_subshapes(uncheck_1)
-                contact_2 = self._parse_for_allow_subshapes(uncheck_2)
-            
-                combinaison = list(itertools.product(contact_1, contact_2))
-
-                # check if subshapes intersect
-                for c in combinaison:
-                    try:
-                        connected, _, _ = geompy.FastIntersect(c[0], c[1], gap)
-
-                    except:
-                        connected = False
-
-                    if connected:
-                        # check for shape coincidence
-                        if self.Coincidence.are_coincident(c[0], c[1]):
-                            has_contact = True
-                            m= self._get_shapeSid_and_subshapesIndices(c[0])
-                            s= self._get_shapeSid_and_subshapesIndices(c[1])
-
-                            #TODO set master and slave
-                            candidates.append((m,s))
-                            sub_0.append(c[0])
-                            sub_1.append(c[1])
-
-                        else:
-                        # check by contact area
-                            area = self._get_contact_area(c[0], c[1])
-
-                            if area > 0:
-                                has_contact = True
-                                #if self._get_shape_area(c[0]) >= self._get_shape_area(c[1]):
-                                m= self._get_shapeSid_and_subshapesIndices(c[0])
-                                s= self._get_shapeSid_and_subshapesIndices(c[1])
-
-                                #else:
-                                    #m= self._get_shapeSid_and_subshapesIndices(c[1])
-                                    #s= self._get_shapeSid_and_subshapesIndices(c[0])
-
-                                candidates.append((m,s))
-                                sub_0.append(c[0])
-                                sub_1.append(c[1])
-
-                area_sub1 = sum((self._get_shape_area(x) for x in sub_0))
-                area_sub2 = sum((self._get_shape_area(x) for x in sub_1))
-
-                grp_1_part = self._get_shapeSid_and_subshapesIndices(sub_0[0])[0]
-                grp_2_part = self._get_shapeSid_and_subshapesIndices(sub_1[0])[0]
-
-                grp1_t=(self._get_shapeSid_and_subshapesIndices(x)[1] for x in sub_0)
-                grp2_t=(self._get_shapeSid_and_subshapesIndices(x)[1] for x in sub_1)
-                grp1=list()
-                grp2=list()
-                for i in grp1_t:
-                        grp1.extend(i)
-                for i in grp2_t:
-                        grp2.extend(i)
-
-                print(area_sub1, area_sub2, grp_1_part, grp_2_part)
-                print(grp1)
-                print(grp2)
-                
-                return has_contact, tuple(candidates)
-
-            else:
-                return has_contact, None
-            
-        except:
-            return has_contact, None       
+    
 
 
 
