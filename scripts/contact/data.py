@@ -19,7 +19,7 @@ Gst = geomtools.GeomStudyTools(StudyEditor)
 Gg = salome.ImportComponentGUI("GEOM")
 Builder = salome.myStudy.NewBuilder()
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class GroupItem():
     shape_allowable_type = (Geompy.ShapeType["FACE"], Geompy.ShapeType["EDGE"], Geompy.ShapeType["VERTEX"])
@@ -403,6 +403,7 @@ class ContactManagement():
         main_shape = group_obj.GetMainShape()
         return Geompy.SubShapes(main_shape, indices)
     
+    # check if the contact already exists
     def _does_contact_pairs_exist(self, group_1:GroupItem, group_2:GroupItem):
         for pairs in self._contacts:
             if pairs.items[0] == group_1 and pairs.items[1] == group_2:

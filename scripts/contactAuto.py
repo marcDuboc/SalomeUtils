@@ -42,7 +42,7 @@ geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class ContactAuto(QObject):
     compound_selected = pyqtSignal(str)
@@ -176,7 +176,7 @@ d.setWidget(contact_auto_instance.Gui)
 d.setAttribute(Qt.WA_DeleteOnClose)
 d.setWindowFlags(d.windowFlags() | Qt.WindowStaysOnTopHint)
 d.setWindowTitle("3D Contacts")
-d.setGeometry(600, 300, 400, 400)
+d.setGeometry(600, 300, 600, 600)
 d.widgetClosed.connect(delete_contact_auto_instance)
 
 d.show()

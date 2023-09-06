@@ -19,7 +19,7 @@ img_path = os.path.join(root_path, 'img')
 salome.salome_init()
 gg = salome.ImportComponentGUI("GEOM")
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 
 class TypeDelegate(QItemDelegate):
@@ -387,6 +387,8 @@ class ContactGUI(QWidget):
         self.table_view.setItemDelegateForColumn(5, self.deleteItem)
         self.table_view.setItemDelegateForColumn(4, self.swapItem)
         self.table_view.setItemDelegateForColumn(3, self.hideShowItem)
+        self.table_view.setSizeAdjustPolicy(QTableView.AdjustToContents)
+        self.table_view.resizeColumnsToContents()
 
         #=======================
         # select root component
@@ -519,6 +521,9 @@ class ContactGUI(QWidget):
     @pyqtSlot()
     def export(self):
         self.export_contact.emit(self.file_name)
+
+    def resizeEvent(self, event):
+         self.table_view.resizeColumnsToContents()
 
     def closeEvent(self, event):
         print("Fermeture de la fenêtre, suppression des instances...")
