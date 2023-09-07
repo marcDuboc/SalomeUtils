@@ -145,26 +145,12 @@ class TableModel(QAbstractTableModel):
 
     def setData(self, index, value, role=Qt.EditRole):		
         if role in (Qt.DisplayRole, Qt.EditRole):
-            """with open(DEBUG_FILE, 'a') as f:
-                f.write(time.ctime())
-                f.write('\t')
-                f.write('setData'+'\t')
-                f.write(str(index.row())+'\t')
-                f.write(str(index.column())+'\t')
-                f.write(str(value))
-                f.write('\n')"""
-
             # if value is blank
             if value in ('',' '):
                 return False
 
             self._data[index.row()][index.column()] = value
-            """with open(DEBUG_FILE, 'a') as f:
-                f.write(time.ctime())
-                f.write('\t')
-                f.write(str(self._data)+'\t')
-                f.write('\n')"""
-
+            
         return True
         
     def flags(self, index):

@@ -66,73 +66,8 @@ class GroupItem():
 
     def get_parent(self):
         return salome.IDToObject(self.shape_sid)
+
         
-class ContactItem():
-
-    # get the geom builder
-    Geompy = geomBuilder.New()
-    
-    # allowable topology
-    shape_allowable_type = (Geompy.ShapeType["FACE"], Geompy.ShapeType["EDGE"], Geompy.ShapeType["VERTEX"])
-
-    def __init__(self, shape_id:str):
-        self.shapes_ids = [] # GEOM object => to id
-        self.type = None    # string
-        self.parent_id = None    # GEOM object => to id
-
-        #egt the geometry object
-        shape = salome.IDToObject(shape_id)
-
-        # check if shape and subshape are allowed
-        if self._are_allowed(shape) :
-            self.shapes_ids.append(shape_id)
-
-        # check working at coumpound level
-        if not shape.IsMainShape() :
-            self.parent_id = shape.GetMainShape().GetStudyEntry()
-
-        else:
-            raise ValueError("Contact must be defined at compound level")
-
-    def add_shape(self, shape_id:str):
-        shape = salome.IDToObject(shape_id)
-        if self._are_same_parent(shape) and self._are_same_type(shape):
-            self.shapes_ids.append(shape_id)
-        else:
-            raise ValueError("Shape and subshape are not valid")
-
-    def _are_same_parent(self, shape):
-        # check if the shape and subshape are from the same parent
-        return self.parent.IsSame(shape.GetMainShape())
-    
-    def _are_same_type(self, shape):
-        # check if the shape and subshape are from the same type
-        return self.type == shape.GetShapeType()._v
-
-    def _are_allowed(self, shape):
-        #Check if the shape and subshape topology are valid
-        type = shape.GetShapeType()._v
-
-        if type not in ContactItem.shape_allowable_type:
-            raise ValueError("Shape type {} is not valid. Allowable type are: {}".format(type,ContactItem.shape_allowable_type))
-        
-        self.type = type
-
-        return True
-    
-    def get_area(self):
-        area = 0
-        for shape in self.shapes:
-            area += ContactItem.Geompy.BasicProperties(shape)[1]
-        return area
-    
-    def get_indices(self):
-        shapes = [salome.IDToObject(id) for id in self.shapes_ids]
-        return [shape.GetSubShapeIndices()[0] for shape in shapes]
-    
-    def get_parent_index(self):
-        return self.parent_id
-    
 class ContactPair():
     """
     Class for contact pair
@@ -294,7 +229,8 @@ class ContactPair():
         return (salome.IDToObject(x.shape_sid) for x in self.items)
     
     def get_parents_sid(self):
-        return (x.shape_sid for x in self.items)
+        sid = [x.shape_sid for x in self.items]
+        return tuple(sid)
     
     def get_groups(self):
         return (salome.IDToObejct(group) for group in self.groups_sid)
@@ -562,74 +498,87 @@ class ContactManagement():
 
     # change type of contact
     def change_type_by_id(self,id:int,value:str):
-
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.set_type(value)
                 
     def check_adjacent_slave_group(self):
         """
-        check if each part has more than one adjacent slave group
+        check if each part has more than one adjacent slave group targeting to a different master part
         """
-
-        parts_slave=dict() # {part_name:[]}
+        parts_slave=dict() 
         name_to_sid=dict()
+        sid_to_name=dict()
         sid_to_pairs_id=dict()
-        sid_to_name={v:k for k,v in name_to_sid.items()}
-
+        slave_target = dict() 
+        
         # find all the parts and slave groups
         for contact in self._contacts:
-
             names = contact.get_group_names()
-            groups_sid = contact.group_sid
+            groups_sid = contact.groups_sid
 
             name_to_sid[names[0]]=groups_sid[0]
             name_to_sid[names[1]]=groups_sid[1]
             sid_to_pairs_id[groups_sid[0]]=contact.id_instance
             sid_to_pairs_id[groups_sid[1]]=contact.id_instance
-
+            parents = contact.get_parents_sid()
             for item in contact.items:
                 if item.shape_sid not in parts_slave.keys():
                     parts_slave[item.shape_sid]=[]
 
-            for name in names:
+            for i,name in enumerate(names):
                 if name[-1]=='S':
                     parts_slave[item.shape_sid].append(name)
+                if name[-1]=='M':
+                    sn = name[:-1]+'S'
+                    p_sid  = parents[i]
+                    slave_target[sn]=p_sid
+
+        sid_to_name={v:k for k,v in name_to_sid.items()}
 
         # reversed dict salve_part
         slave_part=dict()
-        for k,v in parts_slave:
+        for k,v in parts_slave.items():
             for slave in v:
                 if slave not in slave_part.keys():
                     slave_part[slave]=[]
                 
                 slave_part[slave].append(k)
         
-
-        # check if the slave group are connected and not same parts
+        # check if the slave group are connected and not targeting the same parts
         to_reversed_id = list()
+
         for k,v in parts_slave.items():
             if len(v)>1:
                 slave_sid = [name_to_sid[name] for name in v]
                 comb = list(itertools.combinations(slave_sid, 2))
                 for c in comb:
-                    isconnect, _, _ = Geompy.FastIntersect(salome.IDToObject(c[0]), salome.IDToObject(c[1]), gap=0.1)
+                    try:
+                        obj1=salome.IDToObject(c[0])
+                        obj2=salome.IDToObject(c[1])
+                        isconnect, _, _ = Geompy.FastIntersect(obj1, obj2)
 
-                    if isconnect:
-                        s0 = sid_to_name[slave_sid[0]]
-                        s1 = sid_to_name[slave_sid[1]]
+                        if isconnect:
+                            s0 = sid_to_name[slave_sid[0]]
+                            s1 = sid_to_name[slave_sid[1]]
+                            s0_part = slave_target[s0]
+                            s1_part = slave_target[s1]
 
-                        s0_parts = slave_part[s0]
-                        s1_parts = slave_part[s1]
-
-                        for s0_pn in s0_parts:
-                            if s0_pn not in s1_parts:
+                            if s0_part != s1_part:
                                 to_reversed_id.append(sid_to_pairs_id[slave_sid[0]])
 
+                    except:
+                        msg = "Cannot check if slave groups {} are connected. Check manually".format(v)
+                        print(msg)
+                        logging.warning(msg)
+                                 
         # reversed
         ids = list(set(to_reversed_id))
+        nb = len(ids)
         for id in ids:
             self.swap_master_slave_by_id(id)
+        
+        return nb
         
 
 

@@ -90,10 +90,6 @@ class ContactAuto(QObject):
             self.Tree.parse_tree_objects(id)
             existing_contact = self.Tree.get_contacts()
 
-            with open(DEBUG_FILE, 'a') as f:
-                f.write(time.ctime() + '\t')
-                f.write(str(existing_contact)+'\n')
-
             # emit existing parts to Gui
             self.existing_parts.emit([x.get_sid() for x in self.Tree.get_parts()])
 

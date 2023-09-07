@@ -177,12 +177,6 @@ class ContactGUI(QWidget):
         if name:
             self.le_export.setText(name)
             self.file_name = name
-            with open(DEBUG_FILE, 'a') as f:
-                f.write(time.ctime())
-                f.write('\t')
-                f.write('select_file'+'\t')
-                f.write(str(name)+'\t')
-                f.write('\n')
 
     @pyqtSlot()
     def export(self):
