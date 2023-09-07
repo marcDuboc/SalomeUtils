@@ -7,6 +7,7 @@
 import re
 import time
 import json
+import itertools
 from collections import OrderedDict
 import salome
 import GEOM
@@ -585,51 +586,64 @@ class ContactManagement():
         check if each part has more than one adjacent slave group
         """
 
-        # for each multiple slave group, check if the target master in on the same part
-        def find_master_part(salve_name:str, parts:dict()):
-            #return a list of tuple (slave_name, part_name)
-            master_part=list()
-            for k,v in parts.items():
-                if salve_name in v['master']:
-                    master_part.append((salve_name,k))
-            
-            # group by part name
-            master_part_grouped = dict()
-            for k,v in master_part:
-                if k not in master_part_grouped.keys():
-                    master_part_grouped[k]=[]
-                master_part_grouped[k].append(v)
+        parts_slave=dict() # {part_name:[]}
+        name_to_sid=dict()
+        sid_to_pairs_id=dict()
+        sid_to_name={v:k for k,v in name_to_sid.items()}
 
-            # remove itmes with only one part
-            for k,v in master_part_grouped.items():
-                if len(v)==1:
-                    del master_part_grouped[k]
-
-            return master_part_grouped
-
-        parts=dict()
-        # find all the parts
+        # find all the parts and slave groups
         for contact in self._contacts:
-            for item in contact.items:
-                if item.shape_sid not in parts.keys():
-                    parts[item.shape_sid]=dict(master=[],slave=[])
+
             names = contact.get_group_names()
+            groups_sid = contact.group_sid
+
+            name_to_sid[names[0]]=groups_sid[0]
+            name_to_sid[names[1]]=groups_sid[1]
+            sid_to_pairs_id[groups_sid[0]]=contact.id_instance
+            sid_to_pairs_id[groups_sid[1]]=contact.id_instance
+
+            for item in contact.items:
+                if item.shape_sid not in parts_slave.keys():
+                    parts_slave[item.shape_sid]=[]
+
             for name in names:
-                if name[-1]=='M':
-                    parts[item.shape_sid]['master'].append(name)
-                elif name[-1]=='S':
-                    parts[item.shape_sid]['slave'].append(name)
+                if name[-1]=='S':
+                    parts_slave[item.shape_sid].append(name)
 
-        # check if each part has more than one adjacent slave group
-        multiple_slave=dict()
-        for k,v in parts.items():
-            if len(v['slave']) > 1:
-                multiple_slave[k]=v['slave']
-
+        # reversed dict salve_part
+        slave_part=dict()
+        for k,v in parts_slave:
+            for slave in v:
+                if slave not in slave_part.keys():
+                    slave_part[slave]=[]
+                
+                slave_part[slave].append(k)
         
 
-        
-       
+        # check if the slave group are connected and not same parts
+        to_reversed_id = list()
+        for k,v in parts_slave.items():
+            if len(v)>1:
+                slave_sid = [name_to_sid[name] for name in v]
+                comb = list(itertools.combinations(slave_sid, 2))
+                for c in comb:
+                    isconnect, _, _ = Geompy.FastIntersect(salome.IDToObject(c[0]), salome.IDToObject(c[1]), gap=0.1)
+
+                    if isconnect:
+                        s0 = sid_to_name[slave_sid[0]]
+                        s1 = sid_to_name[slave_sid[1]]
+
+                        s0_parts = slave_part[s0]
+                        s1_parts = slave_part[s1]
+
+                        for s0_pn in s0_parts:
+                            if s0_pn not in s1_parts:
+                                to_reversed_id.append(sid_to_pairs_id[slave_sid[0]])
+
+        # reversed
+        ids = list(set(to_reversed_id))
+        for id in ids:
+            self.swap_master_slave_by_id(id)
         
 
 
