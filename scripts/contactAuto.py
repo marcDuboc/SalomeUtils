@@ -7,7 +7,6 @@
 import os
 import sys
 import inspect
-import logging
 import itertools
 import time
 import GEOM
@@ -27,6 +26,7 @@ try:
     from contact.geom import ParseShapesIntersection
     from contact.tree import Tree
     from contact.cgui.mainwin import ContactGUI
+    from contact import logging
     
 except:
     script_directory = os.path.dirname(
@@ -36,13 +36,12 @@ except:
     from contact.geom import ParseShapesIntersection
     from contact.tree import Tree
     from contact.cgui.mainwin import ContactGUI
+    from contact import logging
 
 # Detect current study
 geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
-
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class ContactAuto(QObject):
     compound_selected = pyqtSignal(str)
@@ -142,10 +141,6 @@ class ContactAuto(QObject):
             res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=gap,tol=angle,merge_by_part=merge_by_part, merge_by_proximity=merge_by_proximity)
 
             if res:
-                """with open(DEBUG_FILE, 'a') as f:
-                    f.write(time.ctime() + '\t')
-                    f.write(str(candidate)+'\n')"""
-
                 # add new contacts to contactManager
                 for c in candidate:
                     grp1 = GroupItem()

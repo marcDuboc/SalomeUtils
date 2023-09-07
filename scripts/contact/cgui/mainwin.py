@@ -19,8 +19,6 @@ import salome
 salome.salome_init()
 gg = salome.ImportComponentGUI("GEOM")
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
-
 class ContactGUI(QWidget):
 
     # define custom signals
@@ -216,10 +214,6 @@ class ContactGUI(QWidget):
 
     def openManualWindow(self):
         self.manualWindow.show()
-
-    """def receiveData(self, data):
-        # This method will be called when the dataReady signal is emitted
-        print(f"Received data: {data}")"""
 
           
     

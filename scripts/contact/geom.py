@@ -6,6 +6,7 @@ import copy
 import GEOM
 import salome
 from salome.geom import geomBuilder
+from contact import logging
 
 try:
     from .utils import CombinePairs
@@ -15,8 +16,6 @@ except:
 # Detect current study
 geompy = geomBuilder.New()
 salome.salome_init()
-
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class Point():
     def __init__(self, x=0.0, y=0.0, z=0.0):

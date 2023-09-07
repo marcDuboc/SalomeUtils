@@ -13,6 +13,7 @@ import salome
 import GEOM
 from salome.geom import geomBuilder, geomtools
 from salome.kernel.studyedit import getStudyEditor
+from contact import logging
 
 
 Geompy = geomBuilder.New()
@@ -21,7 +22,6 @@ Gst = geomtools.GeomStudyTools(StudyEditor)
 Gg = salome.ImportComponentGUI("GEOM")
 Builder = salome.myStudy.NewBuilder()
 
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class GroupItem():
     shape_allowable_type = (Geompy.ShapeType["FACE"], Geompy.ShapeType["EDGE"], Geompy.ShapeType["VERTEX"])
@@ -44,15 +44,6 @@ class GroupItem():
                 if indices not in __value.subshapes_indices:
                     return False
             return True
-        
-    """def _are_allowed(self, shubshape_indice):
-        #Check if the shape and subshape topology are valid
-        type = shape.GetShapeType()._v
-        if type not in ContactItem.shape_allowable_type:
-            raise ValueError("Shape type {} is not valid. Allowable type are: {}".format(type,ContactItem.shape_allowable_type))
-        self.type = type
-        return True
-    """
 
     def create(self, shape_sid:str, subshape_indices:list):
         self.shape_sid = shape_sid
@@ -421,11 +412,6 @@ class ContactManagement():
     # method to be used with autotools
     def create_from_groupItem(self, group_1:GroupItem, group_2:GroupItem):
         # check if the contact already exists
-
-        with open(DEBUG_FILE, 'a') as f:
-            f.write(time.ctime() + '\t')
-            f.write(str(group_1) + '\t' + str(group_2) + '\n')
-
         if self._does_contact_pairs_exist(group_1, group_2):
             return False
         

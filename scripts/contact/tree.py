@@ -7,8 +7,7 @@
 import re
 import salome
 import GEOM
-
-DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
+from contact import logging
 
 def id_to_tuple(id):
     """
