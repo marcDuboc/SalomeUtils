@@ -8,7 +8,7 @@ import re
 import salome
 import GEOM
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 def id_to_tuple(id):
     """

@@ -25,8 +25,8 @@ try:
     reload(sys.modules['contact.data', 'contact.geom', 'contact.tree', 'contact.interface'])
     from contact.data import ContactManagement,GroupItem
     from contact.geom import ParseShapesIntersection
-    from contact.tree import Tree,TreeItem
-    from contact.interface import ContactGUI
+    from contact.tree import Tree
+    from contact.cgui.mainwin import ContactGUI
     
 except:
     script_directory = os.path.dirname(
@@ -35,19 +35,21 @@ except:
     from contact.data import ContactManagement,GroupItem
     from contact.geom import ParseShapesIntersection
     from contact.tree import Tree
-    from contact.interface import ContactGUI
+    from contact.cgui.mainwin import ContactGUI
 
 # Detect current study
 geompy = geomBuilder.New()
 gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class ContactAuto(QObject):
     compound_selected = pyqtSignal(str)
     parts_selected = pyqtSignal(list)
     existing_parts = pyqtSignal(list)
+    progess_autocontact = pyqtSignal(int)
+    autocontact_completed = pyqtSignal()
 
     def __init__(self):
         super(ContactAuto, self).__init__()
@@ -110,6 +112,8 @@ class ContactAuto(QObject):
             self.Gui.autoWindow.partSelection.connect(self.select_parts)
             self.parts_selected.connect(self.Gui.autoWindow.set_parts)
             self.Gui.autoWindow.contactRun.connect(self.process_contact)
+            self.progess_autocontact.connect(self.Gui.autoWindow.on_progress)
+            self.autocontact_completed.connect(self.Gui.autoWindow.on_completed)
     
     @pyqtSlot()
     def select_parts(self):
@@ -126,34 +130,45 @@ class ContactAuto(QObject):
                 self.parts.append(id)
             self.parts_selected.emit(part_ids)
 
-    @pyqtSlot(float, float, bool)
-    def process_contact(self, gap, angle, merge_by_part):
-        contact_pairs = []
+    @pyqtSlot(float, float, bool,bool)
+    def process_contact(self, gap, angle, merge_by_part, merge_by_proximity):
+
         combine = list(itertools.combinations(self.parts, 2))
+        nb_comb = len(combine)
 
         for i in range(len(combine)):
-            res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=gap,merge_by_part=merge_by_part)
+            # emit progress
+            self.progess_autocontact.emit(int((i)/nb_comb*100))
+            res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=gap,tol=angle,merge_by_part=merge_by_part, merge_by_proximity=merge_by_proximity)
+
             if res:
-                contact_pairs.extend(candidate)
-        
-        with open(DEBUG_FILE, 'a') as f:
-            f.write(time.ctime() + '\t')
-            f.write(str(contact_pairs)+'\n')
+                """with open(DEBUG_FILE, 'a') as f:
+                    f.write(time.ctime() + '\t')
+                    f.write(str(candidate)+'\n')"""
 
-        # add new contacts to contactManager
-        for c in contact_pairs:
-            grp1 = GroupItem()
-            grp2 = GroupItem()
-            grp1.create(c[0][0], c[0][1])
-            grp2.create(c[1][0], c[1][1])
+                # add new contacts to contactManager
+                for c in candidate:
+                    grp1 = GroupItem()
+                    grp2 = GroupItem()
+                    grp1.create(c[0][0], c[0][1])
+                    grp2.create(c[1][0], c[1][1])
 
-            self.Contact.create_from_groupItem(grp1, grp2)
+                    self.Contact.create_from_groupItem(grp1, grp2)
 
         # debug
         self.Contact.check_adjacent_slave_group()
 
         # update table
         self.Gui.set_data(self.Contact.to_table_model())
+
+        # emit progress 
+        self.progess_autocontact.emit(100)
+
+        # emit completed
+        self.autocontact_completed.emit()
+
+        # clear parts
+        self.parts.clear()
 
     @pyqtSlot(str,str)
     def manual_contact(self, group_sid_1:str, group_sid_2:str):

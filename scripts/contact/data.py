@@ -20,7 +20,7 @@ Gst = geomtools.GeomStudyTools(StudyEditor)
 Gg = salome.ImportComponentGUI("GEOM")
 Builder = salome.myStudy.NewBuilder()
 
-DEBUG_FILE = 'E:\GIT_REPO\SalomeUtils\debug\d.txt'
+DEBUG_FILE = 'E:\GitRepo\SalomeUtils\debug\d.txt'
 
 class GroupItem():
     shape_allowable_type = (Geompy.ShapeType["FACE"], Geompy.ShapeType["EDGE"], Geompy.ShapeType["VERTEX"])
@@ -409,11 +409,9 @@ class ContactManagement():
     def _does_contact_pairs_exist(self, group_1:GroupItem, group_2:GroupItem):
         for pairs in self._contacts:
             if pairs.items[0] == group_1 and pairs.items[1] == group_2:
-                print("contact already exists")
                 print(pairs.items[0],group_1,pairs.items[1],group_2)
                 return True
             elif pairs.items[0] == group_2 and pairs.items[1] == group_1:
-                print("contact already exists")
                 print(pairs.items[0],group_2,pairs.items[1],group_1)
                 return True
             else:
@@ -422,6 +420,11 @@ class ContactManagement():
     # method to be used with autotools
     def create_from_groupItem(self, group_1:GroupItem, group_2:GroupItem):
         # check if the contact already exists
+
+        with open(DEBUG_FILE, 'a') as f:
+            f.write(time.ctime() + '\t')
+            f.write(str(group_1) + '\t' + str(group_2) + '\n')
+
         if self._does_contact_pairs_exist(group_1, group_2):
             return False
         
@@ -572,11 +575,6 @@ class ContactManagement():
 
     # change type of contact
     def change_type_by_id(self,id:int,value:str):
-        """with open(DEBUG_FILE, 'a') as f:
-            msg = " change_type_by_id: id: {}, value: {}".format(id,value)
-            f.write(time.ctime())
-            f.write(msg)
-            f.write('\n')"""
 
         for pairs in self._contacts:
             if pairs.id_instance == id:
@@ -586,10 +584,32 @@ class ContactManagement():
         """
         check if each part has more than one adjacent slave group
         """
+
+        # for each multiple slave group, check if the target master in on the same part
+        def find_master_part(salve_name:str, parts:dict()):
+            #return a list of tuple (slave_name, part_name)
+            master_part=list()
+            for k,v in parts.items():
+                if salve_name in v['master']:
+                    master_part.append((salve_name,k))
+            
+            # group by part name
+            master_part_grouped = dict()
+            for k,v in master_part:
+                if k not in master_part_grouped.keys():
+                    master_part_grouped[k]=[]
+                master_part_grouped[k].append(v)
+
+            # remove itmes with only one part
+            for k,v in master_part_grouped.items():
+                if len(v)==1:
+                    del master_part_grouped[k]
+
+            return master_part_grouped
+
         parts=dict()
         # find all the parts
         for contact in self._contacts:
-
             for item in contact.items:
                 if item.shape_sid not in parts.keys():
                     parts[item.shape_sid]=dict(master=[],slave=[])
@@ -599,6 +619,20 @@ class ContactManagement():
                     parts[item.shape_sid]['master'].append(name)
                 elif name[-1]=='S':
                     parts[item.shape_sid]['slave'].append(name)
+
+        # check if each part has more than one adjacent slave group
+        multiple_slave=dict()
+        for k,v in parts.items():
+            if len(v['slave']) > 1:
+                multiple_slave[k]=v['slave']
+
+        
+
+        
+       
+        
+
+
 
 
 
