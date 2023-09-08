@@ -21,19 +21,25 @@ except:
 input json file as list of dict:
 [
     {
-        "id": "1",
-        "type": "bonded",
-        "parts": [
+        "id": 1,
+        "type": "BONDED",
+        "shapes": [
             "P1",
-            "P19"
+            "P2"
         ],
-        "surfaces": [
-            "_C1S",
-            "_C1M"
+        "shapes_id": [
+            "0:1:1:5:2",
+            "0:1:1:5:3"
         ],
-        "master": null,
-        "gap": null,
-        "completed": true
+        "subshapes": [
+            "_CA1M",
+            "_CA1S"
+        ],
+        "subshapes_id": [
+            "0:1:1:5:2:6",
+            "0:1:1:5:3:6"
+        ],
+        "gap": null
     },...]
 
 """
@@ -56,13 +62,26 @@ def getSlaveMasterIndex(surfaces, pattern=re.compile(".*S$")):
     index = next((i for i, string in enumerate(surfaces) if pattern.match(string)), None)
     return index
 
-def getPair(data):
+def get_pair_and_dict_id(data): 
+    """
+    return a dict with key as contact id and value as tuple of part_id and surface_id
+    pairs = {id_contact:(shape_id of the master, subshape_id of the slave)}
+    dict_id = {id:name}
+    """
     pairs = dict()
+    dict_id = dict()
+
     for item in data:
-        if item["type"] in ("bonded", "sliding"):
-            sid = getSlaveMasterIndex(item["surfaces"], re.compile(".*S$"))
-            pairs[item['id']] = (item["parts_id"][sid], item["surfaces_id"][sid])
-    return pairs
+        if item["type"] in ("BONDED", "SLIDING"):
+            mid=0
+            sid = getSlaveMasterIndex(item["subshapes"], re.compile(".*S$"))
+            if sid == 0:
+                mid = 1
+            pairs[item['id']] = (item["shapes_id"][mid], item["subshapes_id"][sid])
+            dict_id[item['subshapes_id'][sid]] = item['subshapes'][sid]
+            dict_id[item['shapes_id'][mid]] = item['shapes'][mid]
+
+    return pairs,dict_id
 
 def getPairSet(pairs):
     # return a list of all the value contained in the pairs
@@ -96,22 +115,24 @@ def combine_tuples(pairs):
 
     return [tuple(sorted(group)) for group in groups.values()]
 
-def parsePairs(pairs):
+def parsePairs(pairs,dict_id):
     """
     pairs is a dict with key as contact id and value as tuple of part_id and surface_id
     """
-    common = list()
-
-    # create combinaison of pairs two by two
-    comb = itertools.combinations(pairs.keys(), 2)
+    group_per_slave= dict() #k:slave, v: list of master
+    common = []
 
     # check if pairs are identical
-    for i in comb:
-        if pairs[i[0]] == pairs[i[1]]:
-            print("contact {} and {} are identical".format(i[0], i[1]))
-            common.append(i)
+    for _,v in pairs.items():
+        if v[1] not in group_per_slave.keys():
+            group_per_slave[v[1]] = []
+        group_per_slave[v[1]].append(v[0])
 
-    return combine_tuples(common)
+    for k,v in group_per_slave.items():
+        d=dict(slave= dict_id[k], master=[dict_id[i] for i in v])
+        common.append(d)
+
+    return common
 
 def extractContact(data,pairs):
     bonded = []
@@ -121,29 +142,29 @@ def extractContact(data,pairs):
     idIndex= {item["id"]:i for i,item in enumerate(data)}
 
     for item in data:
-        if item["type"] in ("bonded", "sliding"):
+        if item["type"] in ("BONDED", "SLIDING"):
             # check master and slave index. master surface name end with M, slave surface name end with S
             # built tuple pair: (master by the part name, slave as surface name)
             if not item["id"] in getPairSet(pairs):
-                mid = getSlaveMasterIndex(item["surfaces"], re.compile(".*M$"))
-                sid = getSlaveMasterIndex(item["surfaces"], re.compile(".*S$"))
-                master = item["parts"][mid]
-                slave = item["surfaces"][sid]
+                mid = getSlaveMasterIndex(item["subshapes"], re.compile(".*M$"))
+                sid = getSlaveMasterIndex(item["subshapes"], re.compile(".*S$"))
+                master = item["shapes"][mid]
+                slave = item["subshapes"][sid]
 
-                if item["type"] == "bonded":
+                if item["type"] == "BONDED":
                     if DEBUG:
-                        bonded.append((master, slave))
+                        sliding.append((master, slave))
                     else:
                         bonded.append(_F(GROUP_MA_ESCL=(slave, ),GROUP_MA_MAIT=(master, )))
 
-                elif item["type"] == "sliding":
+                elif item["type"] == "SLIDING":
                     sliding.append((master, slave,'dnor','dnor'))
             
 
-        elif item["type"] == "friction":
+        elif item["type"] == "FRICTION":
             friction.append(None)
 
-        elif item["type"] == "frictionless":
+        elif item["type"] == "FRICTIONLESS":
             frictionless.append(None)
 
     for item in pairs:
@@ -153,22 +174,22 @@ def extractContact(data,pairs):
         # get the slave of surface of the first pair
         p0 = data[idIndex[item[0]]]
         contact_type = p0["type"]
-        slave = p0["surfaces"][getSlaveMasterIndex(p0["surfaces"])]
+        slave = p0["subshapes"][getSlaveMasterIndex(p0["subshapes"])]
 
         # append the master of all the pairs
-        master.append(p0["parts"][getSlaveMasterIndex(p0["surfaces"], re.compile(".*M$"))])
+        master.append(p0["shapes"][getSlaveMasterIndex(p0["subshapes"], re.compile(".*M$"))])
 
         for i in item[1:]:
             p = data[idIndex[i]]
-            master.append(p["parts"][getSlaveMasterIndex(p["surfaces"], re.compile(".*M$"))])
+            master.append(p["shapes"][getSlaveMasterIndex(p["subshapes"], re.compile(".*M$"))])
         
-        if contact_type == "bonded":
+        if contact_type == "BONDED":
             if DEBUG:
                 bonded.append((master, slave))
             else:
                 bonded.append(_F(GROUP_MA_ESCL=(slave, ),GROUP_MA_MAIT=tuple(master)))
 
-        elif contact_type == "sliding":
+        elif contact_type == "SLIDING":
             if DEBUG:
                 sliding.append((master, slave,'DNOR','DNOR'))
             else:
@@ -182,11 +203,16 @@ def extractContact(data,pairs):
 # ________________________________________________________________
 
 # replace the file with your json file absolute path
-file = "E:\GIT_REPO\SalomeUtils\debug\contact.json"
+file = "E:\GitRepo\SalomeUtils\debug\contact.json"
 data = loadJson(file)
-pairs = getPair(data)
-common = parsePairs(pairs)
-contact=extractContact(data,common)
+pair,dict_id = get_pair_and_dict_id(data)
+print(dict_id)
+common = parsePairs(pair,dict_id)
+for k in common:
+    print(k)
+"""contact=extractContact(data,common)
+print('pairs',pairs)
+print('common',common)
 
 print("Contact Extracted")
 print("==================")
@@ -199,5 +225,5 @@ sliding = contact["sliding"]
 friction = contact["friction"]
 frictionless = contact["frictionless"]
 
-for item in bonded:
-    print("_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}')),".format(item[1],item[0]))
+for item in sliding:
+    print("_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}')),".format(item[1],item[0]))"""

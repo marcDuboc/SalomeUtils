@@ -13,6 +13,7 @@ import salome
 import GEOM
 from salome.geom import geomBuilder, geomtools
 from salome.kernel.studyedit import getStudyEditor
+from contact.geom import ShapeProperties
 from contact import logging
 
 
@@ -155,11 +156,11 @@ class ContactPair():
             cont = dict()
             cont['id'] = self.id_instance
             cont['type'] = self.type
-            cont['shapes'] = []
+            cont['shapes'] = self.get_parents_name()
+            cont['shapes_id'] = self.get_parents_sid()
             cont['subshapes'] = self.get_group_names()
+            cont['subshapes_id'] = self.get_groups_sid()
             cont['gap'] = self.gap
-            for item in self.items:
-                cont['shapes'].append(salome.IDToObject(item.shape_sid).GetName())
             return cont
 
     def to_table_model(self):
@@ -227,6 +228,10 @@ class ContactPair():
 
     def get_parents(self):
         return (salome.IDToObject(x.shape_sid) for x in self.items)
+    
+    def get_parents_name(self):
+        names = [salome.IDToObject(x.shape_sid).GetName() for x in self.items]
+        return tuple(names)
     
     def get_parents_sid(self):
         sid = [x.shape_sid for x in self.items]
@@ -506,7 +511,7 @@ class ContactManagement():
         """
         check if each part has more than one adjacent slave group targeting to a different master part
         """
-        parts_slave=dict() 
+        parts_slave=dict()
         name_to_sid=dict()
         sid_to_name=dict()
         sid_to_pairs_id=dict()
@@ -519,9 +524,12 @@ class ContactManagement():
 
             name_to_sid[names[0]]=groups_sid[0]
             name_to_sid[names[1]]=groups_sid[1]
+
             sid_to_pairs_id[groups_sid[0]]=contact.id_instance
             sid_to_pairs_id[groups_sid[1]]=contact.id_instance
             parents = contact.get_parents_sid()
+
+
             for item in contact.items:
                 if item.shape_sid not in parts_slave.keys():
                     parts_slave[item.shape_sid]=[]
@@ -565,10 +573,22 @@ class ContactManagement():
                             s1_part = slave_target[s1]
 
                             if s0_part != s1_part:
-                                to_reversed_id.append(sid_to_pairs_id[slave_sid[0]])
+
+                                # reversed the part with the lower ratio (slave_area/master_area)
+                                s0_area = Geompy.BasicProperties(obj1)[1]
+                                s1_area = Geompy.BasicProperties(obj2)[1]
+                                m0_name = sid_to_name[c[0]][:-1]+'M'
+                                m1_name = sid_to_name[c[1]][:-1]+'M'
+                                m0_area = Geompy.BasicProperties(salome.IDToObject(name_to_sid[m0_name]))[1]
+                                m1_area = Geompy.BasicProperties(salome.IDToObject(name_to_sid[m1_name]))[1]
+
+                                if s0_area/m0_area >= s1_area/m1_area:
+                                    to_reversed_id.append(sid_to_pairs_id[slave_sid[0]])
+                                else:
+                                    to_reversed_id.append(sid_to_pairs_id[slave_sid[1]])
 
                     except:
-                        msg = "Cannot check if slave groups {} are connected. Check manually".format(v)
+                        msg = "Cannot check if slave groups {} are connected. Check manually".format(c)
                         print(msg)
                         logging.warning(msg)
                                  
