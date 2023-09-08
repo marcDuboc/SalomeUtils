@@ -154,12 +154,13 @@ class ContactPair():
     def to_dict_for_export(self):
         if self.completed:
             cont = dict()
-            cont['id'] = self.id_instance
+            cont['id'] = str(self.id_instance)
             cont['type'] = self.type
             cont['shapes'] = self.get_parents_name()
             cont['shapes_id'] = self.get_parents_sid()
             cont['subshapes'] = self.get_group_names()
             cont['subshapes_id'] = self.get_groups_sid()
+            cont['master_id'] = self.master
             cont['gap'] = self.gap
             return cont
 
@@ -331,6 +332,9 @@ class ContactManagement():
     def __del__(self):
         for contact in self._contacts:
             del contact
+
+    def get_contacts(self):
+        return self._contacts
 
     def _get_subshape_from_group(self, group_sid:str):
         group_obj = salome.IDToObject(group_sid)

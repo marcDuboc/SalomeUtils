@@ -24,7 +24,7 @@ class ContactGUI(QWidget):
     # define custom signals
     load_compound = pyqtSignal()
     closing = pyqtSignal()
-    export_contact = pyqtSignal(str)
+    export_contact = pyqtSignal(str,str)
 
     def __init__(self):
         super(ContactGUI, self).__init__()
@@ -108,18 +108,31 @@ class ContactGUI(QWidget):
         self.le_export = QLineEdit()    
         self.le_export.setReadOnly(True)
         self.le_export.setText("Please select a path")
-        # create button for export path
-        self.bt_path = QPushButton()
-        self.bt_path.setIcon(QIcon(os.path.join(IMG_PATH,'folder.png')))
-        # create buttons for export
+
+        # create button for export
         self.bt_export = QPushButton()
         self.bt_export.setIcon(QIcon(os.path.join(IMG_PATH,'save.png')))
+        # create checkbox for export file json
+        self.cb_export_json = QCheckBox("Raw format (*.json)", self)
+        self.cb_export_json.setChecked(True)
+        #create checkbox for export file comm
+        self.cb_export_comm = QCheckBox("Aster format (*.comm)", self)
+        self.cb_export_comm.setChecked(False)
+
+        #add checkbox in a horizontal layout
+        self.hbox_0 = QHBoxLayout()
+        self.hbox_0.addWidget(self.cb_export_json)
+        self.hbox_0.addWidget(self.cb_export_comm)
+
         # put the bouton in a horizontal layout
         self.hbox = QHBoxLayout()
         self.hbox.addWidget(self.le_export)
-        self.hbox.addWidget(self.bt_path)
         self.hbox.addWidget(self.bt_export)
-        self.gp_export.setLayout(self.hbox)
+
+        self.vbox = QVBoxLayout()
+        self.vbox.addLayout(self.hbox_0)
+        self.vbox.addLayout(self.hbox)
+        self.gp_export.setLayout(self.vbox)
 
         #=======================
         # layout
@@ -140,8 +153,9 @@ class ContactGUI(QWidget):
         btnOK.clicked.connect(self.close)
         self.cb_parts.stateChanged.connect(self.display_compound_part)
         self.sl_transparency.valueChanged.connect(self.set_compound_part_transparency)
-        self.bt_path.clicked.connect(self.select_file)
-        self.bt_export.clicked.connect(self.export)
+        self.bt_export.clicked.connect(self.select_file)
+        self.cb_export_json.stateChanged.connect(self.on_change_export_json)
+        self.cb_export_comm.stateChanged.connect(self.on_change_export_comm)
         
     # slots
     @pyqtSlot(str)
@@ -173,14 +187,42 @@ class ContactGUI(QWidget):
     def select_file(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        name, _ = QFileDialog.getSaveFileName(self, "Export file","","Json (*.json)", options=options)
+        name, _ = QFileDialog.getSaveFileName(self, "Export file","","Json (*.json);Comm (*.comm)", options=options)
         if name:
+            if self.cb_export_comm.isChecked():
+                export = 'ASTER'
+                format = '.comm'
+            else:
+                export = 'RAW'
+                format = '.json'
+
+            # chck if the file has the right extension
+            if not name.endswith(format):
+                name.split('.')[0]
+                name = name+format
+            
             self.le_export.setText(name)
             self.file_name = name
+            
+            if self.cb_export_comm.isChecked():
+                export = 'ASTER'
+            else:
+                export = 'RAW'
+            self.export_contact.emit(name,export)
 
-    @pyqtSlot()
-    def export(self):
-        self.export_contact.emit(self.file_name)
+    @pyqtSlot(int)
+    def on_change_export_json(self):
+        if self.cb_export_json.isChecked():
+            self.cb_export_comm.setChecked(False)
+        else:
+            self.cb_export_comm.setChecked(True)
+
+    @pyqtSlot(int)
+    def on_change_export_comm(self):
+        if self.cb_export_comm.isChecked():
+            self.cb_export_json.setChecked(False)
+        else:
+            self.cb_export_json.setChecked(True)
 
     def resizeEvent(self, event):
          self.table_view.resizeColumnsToContents()

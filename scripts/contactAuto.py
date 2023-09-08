@@ -26,6 +26,7 @@ try:
     from contact.geom import ParseShapesIntersection
     from contact.tree import Tree
     from contact.cgui.mainwin import ContactGUI
+    from contact.aster.comm import MakeComm
     from contact import logging
     
 except:
@@ -36,6 +37,7 @@ except:
     from contact.geom import ParseShapesIntersection
     from contact.tree import Tree
     from contact.cgui.mainwin import ContactGUI
+    from contact.aster.comm import MakeComm
     from contact import logging
 
 # Detect current study
@@ -165,10 +167,18 @@ class ContactAuto(QObject):
     def manual_contact(self, group_sid_1:str, group_sid_2:str):
         self.Contact.create_from_groupsID(group_sid_1, group_sid_2)
 
-    @pyqtSlot(str)
-    def export_contact(self, filename):
-        self.Contact.export(filename)
-
+    @pyqtSlot(str,str)
+    def export_contact(self, filename,export):
+        if export == "RAW":
+            self.Contact.export(filename)
+            
+        elif export == "ASTER":
+            data = []
+            for c in self.Contact.get_contacts():
+                data.append(c.to_dict_for_export())
+            Mk = MakeComm(data)
+            with open(filename, 'w') as f:
+                f.write(Mk.process())
 
 class MyDockWidget(QDockWidget):
     widgetClosed = pyqtSignal()
