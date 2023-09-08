@@ -600,6 +600,7 @@ class ContactManagement():
         ids = list(set(to_reversed_id))
         nb = len(ids)
         for id in ids:
+            logging.info("Swap master and slave for contact pair {}".format(id))
             self.swap_master_slave_by_id(id)
         
         return nb

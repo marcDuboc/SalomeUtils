@@ -245,7 +245,7 @@ class ParseShapesIntersection():
     Class to parse the intersection between two shapes
     """
 
-    Shape_allowed = ['PLANE','PLANAR','POLYGON','DISK_CIRCLE','DISK_ELLIPSE' ,'CYLINDER', 'CYLINDER2D', 'SPHERE','SHERE2D', 'CONE','CONE2D', 'TORUS']
+    Shape_allowed = ['FACE','TORUS2D','PLANE','PLANAR','POLYGON','DISK_CIRCLE','DISK_ELLIPSE' ,'CYLINDER', 'CYLINDER2D', 'SPHERE','SHERE2D', 'CONE','CONE2D', 'TORUS']
 
     def __init__(self):
         self.Coincidence = ShapeCoincidence()
@@ -254,12 +254,13 @@ class ParseShapesIntersection():
         subshapes=list()
         for i in range(len(subshape_list)):
             kos = str(geompy.KindOfShape(subshape_list[i])[0])
-            
             if kos in ParseShapesIntersection.Shape_allowed:
                 subshapes.append(subshape_list[i])
 
             else:
-                raise ValueError(f"Shape {kos} is not allowed")
+                print(f"Shape {kos} is not allowed")
+                logging.info(f"Shape {kos} is not allowed")
+    
 
         return subshapes
 
@@ -440,13 +441,14 @@ class ParseShapesIntersection():
 
         try:
             isconnect, res1, res2 = geompy.FastIntersect(obj1, obj2, gap)
-
+            logging.debug(f"FastIntersect: {isconnect}")
             if isconnect:
                 uncheck_1 = geompy.SubShapes(obj1, res1)
                 uncheck_2 = geompy.SubShapes(obj2, res2)
                 contact_1 = self._parse_for_allow_subshapes(uncheck_1)
                 contact_2 = self._parse_for_allow_subshapes(uncheck_2)
-            
+                logging.debug(f"contact_1: {contact_1}")
+                logging.debug(f"contact_2: {contact_2}")
                 combinaison = list(itertools.product(contact_1, contact_2))
 
                 # check if subshapes intersect

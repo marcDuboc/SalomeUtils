@@ -195,17 +195,19 @@ class MakeComm:
         s = MakeComm._listNameToStrTuple(slave)
         return "_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}'),DDL_MAIT = 'DNOR', DDL_ESCL = 'DNOR'),".format(slave,master)          
 
-    def strFFriction(self,master,slave):
-        # master as [m1,m2,...] to m as ('m1','m1',...)
-        m = MakeComm._listNameToStrTuple(master)
-        s = MakeComm._listNameToStrTuple(slave)
-        return ""
-    
     def strFFrictionless(self,master,slave):
         # master as [m1,m2,...] to m as ('m1','m1',...)
         m = MakeComm._listNameToStrTuple(master)
         s = MakeComm._listNameToStrTuple(slave)
-        return ""
+        return "_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}')),".format(slave,master)  
+    
+    def strFFriction(self,master,slave):
+        # master as [m1,m2,...] to m as ('m1','m1',...)
+        m = MakeComm._listNameToStrTuple(master)
+        s = MakeComm._listNameToStrTuple(slave)
+        coulomb = 0.5
+        e_t= 10000
+        return "_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}'),COULOMB={}, E_T ={}),".format(slave,master,coulomb,e_t)  
     
     def regroupMasterbySlave(self, contacts:list):
         masterSalveId = dict()
