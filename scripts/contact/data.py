@@ -156,12 +156,16 @@ class ContactPair():
             cont = dict()
             cont['id'] = str(self.id_instance)
             cont['type'] = self.type
-            cont['shapes'] = self.get_parents_name()
-            cont['shapes_id'] = self.get_parents_sid()
-            cont['subshapes'] = self.get_group_names()
-            cont['subshapes_id'] = self.get_groups_sid()
             cont['master_id'] = self.master
-            cont['gap'] = self.gap
+            cont['shapes'] = self.get_parents_name()
+            cont['subshapes'] = self.get_group_names()
+
+            shapes_indices = [salome.IDToObject(x).GetSubShapeIndices()[0] for x in self.get_parents_sid()]
+            subshapes_indices = [salome.IDToObject(x).GetSubShapeIndices()[0] for x in self.get_groups_sid()]
+
+            cont['shapes_id'] = shapes_indices
+            cont['subshapes_id'] = subshapes_indices
+            
             return cont
 
     def to_table_model(self):
@@ -223,9 +227,13 @@ class ContactPair():
             salome.sg.updateObjBrowser()
 
     def _set_study_name(self, obj_sid:str, name:str):
-        sobj = salome.IDToSObject(obj_sid)
-        sobjattr = Builder.FindOrCreateAttribute(sobj, "AttributeName")
-        sobjattr.SetValue(name)
+        try:
+            sobj = salome.IDToSObject(obj_sid)
+            logging.info("Set study name {} for object {}".format(name,sobj))
+            sobjattr = Builder.FindOrCreateAttribute(sobj, "AttributeName")
+            sobjattr.SetValue(name)
+        except:
+            logging.warning("Cannot set study name {} for object {}".format(name, obj_sid))
 
     def get_parents(self):
         return (salome.IDToObject(x.shape_sid) for x in self.items)
@@ -510,7 +518,8 @@ class ContactManagement():
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.set_type(value)
-                
+            
+    # TODO check the fucntion some bug occur for some part !!!        
     def check_adjacent_slave_group(self):
         """
         check if each part has more than one adjacent slave group targeting to a different master part

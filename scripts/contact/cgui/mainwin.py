@@ -64,7 +64,7 @@ class ContactGUI(QWidget):
         self.lb_root.setText("Please select a compound")
         self.bt_root = QPushButton()
         self.bt_root.setIcon(QIcon(os.path.join(IMG_PATH,'input.png')))
-        self.bt_root.clicked.connect(self.emit_load_compound)
+        
 
         #=======================
         # create groupbox for parts
@@ -148,6 +148,7 @@ class ContactGUI(QWidget):
         self.setLayout(layout)
 
         # connect signals
+        self.bt_root.clicked.connect(self.emit_load_compound)
         self.bt_contact_auto.clicked.connect(self.openAutoWindow)
         self.bt_contact_manual.clicked.connect(self.openManualWindow)
         btnOK.clicked.connect(self.close)

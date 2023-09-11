@@ -58,13 +58,6 @@ class SwapDelegate(QItemDelegate):
     def __init__(self, *args, **kwargs):
         super(SwapDelegate, self).__init__(*args, **kwargs)
 
-    """def event(self, event):
-        if event.type() == QEvent.HoverEnter:
-            print("enter")
-        elif event.type() == QEvent.HoverLeave:
-            print("leave")
-        return super().event(event)"""
-
     def paint(self, painter, option, index):
 
         if option.state & QStyle.State_Selected:

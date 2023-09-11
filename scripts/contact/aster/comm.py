@@ -60,7 +60,7 @@ class ContactItem:
         self.subshapes = data["subshapes"]
         self.subshapes_id = data["subshapes_id"]
         self.master_id = data["master_id"]
-        self.gap = data["gap"]
+        #self.gap = data["gap"]
 
     def getSlaveName(self):
         if self.type in ["BONDED","SLIDING"]:
@@ -175,11 +175,11 @@ class MakeComm:
     def _listNameToStrTuple(names:list) -> str:
         str_names =chr(40)
         if type(names) is str:
-            str_names += "'{}'".format(names)
+            str_names += "'{}',".format(names)
 
         elif type(names) is list:
             for n in names:
-                str_names += "'{}'".format(n)
+                str_names += "'{}',".format(n)
         str_names += chr(41)
         return str_names
 
@@ -218,7 +218,7 @@ class MakeComm:
                 masterSalveId[item["slave"]].append(item["master"])
         return masterSalveId
     
-    def makeBonded(self,reGroup=False):
+    def makeBonded(self,reGroup=True):
         str_bonded = 'bonded = (\n'
         bonded = self.Contacts.getContactByType("BONDED")
         bonded_id = [item.id for item in bonded]

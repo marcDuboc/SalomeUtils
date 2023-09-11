@@ -263,16 +263,7 @@ class ParseShapesIntersection():
     
 
         return subshapes
-
-    """def _get_shapeSid_and_subshapesIndices(self, subshapes:GEOM._objref_GEOM_Object):
-        parent_sid = subshapes.GetMainShape().GetStudyEntry()
-        subshape_index = subshapes.GetSubShapeIndices()
-
-        if type(subshape_index)!=list:
-            subshape_index = list(subshape_index)
-
-        return (parent_sid, subshape_index)"""
-        
+ 
     def _get_contact_area(self, subobj1, subobj2):
         common_area = geompy.MakeCommon(subobj1, subobj2)
         area = geompy.BasicProperties(common_area)
@@ -340,13 +331,16 @@ class ParseShapesIntersection():
             part_con=list()
             comb_c = list(itertools.combinations(c, 2))
             CombPairs = CombinePairs()
+            has_connected_parts = False
+
             for c in comb_c:
                 try:
                     connected, _, _ = geompy.FastIntersect(c[0], c[1], 0.0)
                 except:
                     connected = False
-
+                    
                 if connected:
+                    has_connected_parts = True
                     id_a = c[0].GetSubShapeIndices()[0]
                     id_b = c[1].GetSubShapeIndices()[0]
                     part_con.append((id_a,id_b))
@@ -357,12 +351,13 @@ class ParseShapesIntersection():
                     if id_b in c_id:
                         c_id.remove(id_b)
             
-            if len(part_con)>1:
+            if has_connected_parts:
                 part_con = CombPairs.combine(part_con)
-
+            
             if len(c_id) > 0:
-                part_con.append(tuple(c_id) )
-
+                for c in c_id:
+                    part_con.append((c,))
+                
             return part_con
         
         pairs_AB = list()
@@ -387,7 +382,7 @@ class ParseShapesIntersection():
 
         #print(subshape_dict1)
         c0= list(set(c0))
-        c1= list(set(c1))
+        c1= list(set(c1))   
 
         # check by proximity
         A_connection = check_proximity(c0)
@@ -410,10 +405,10 @@ class ParseShapesIntersection():
         # set back the is to salome object
         regroup_AB = list(set(regroup_AB))
 
-        #print(pairs_AB)
-        #print(A_connection)
-        #print(B_connection)
-        #print(regroup_AB)
+        logging.info(f"pairs_AB: {pairs_AB}")
+        logging.info(f"A_connection: {A_connection}")
+        logging.info(f"B_connection: {B_connection}")
+        logging.info(f"regroup_AB: {regroup_AB}")
 
         res=list()
         for con in regroup_AB:
@@ -430,31 +425,33 @@ class ParseShapesIntersection():
     def intersection(self, obj1_sid:str, obj2_sid:str, gap=0.0, tol=0.01, merge_by_part=False, merge_by_proximity=True):
         """
         Get the intersection between two shapes
+
         """
         obj1 = salome.IDToObject(obj1_sid)
         obj2 = salome.IDToObject(obj2_sid)
 
         self.Coincidence.gap = gap
+        self.Coincidence.tolerance = tol
         candidates = list()
         group = list()
         has_contact = False
 
+        logging.info(f"Intersection between {obj1_sid} and {obj2_sid}")
+
         try:
             isconnect, res1, res2 = geompy.FastIntersect(obj1, obj2, gap)
-            logging.debug(f"FastIntersect: {isconnect}")
             if isconnect:
                 uncheck_1 = geompy.SubShapes(obj1, res1)
                 uncheck_2 = geompy.SubShapes(obj2, res2)
                 contact_1 = self._parse_for_allow_subshapes(uncheck_1)
                 contact_2 = self._parse_for_allow_subshapes(uncheck_2)
-                logging.debug(f"contact_1: {contact_1}")
-                logging.debug(f"contact_2: {contact_2}")
                 combinaison = list(itertools.product(contact_1, contact_2))
 
                 # check if subshapes intersect
                 for c in combinaison:
                     try:
                         connected, _, _ = geompy.FastIntersect(c[0], c[1], gap)
+                        logging.info(f"FastIntersect: {connected}")
                     
                     except:
                         connected = False
@@ -462,8 +459,10 @@ class ParseShapesIntersection():
                     if connected:
                         # check for shape coincidence
                         if self.Coincidence.are_coincident(c[0], c[1]):
+                            logging.info(f"Coincidence: {True}")
                             has_contact = True
                             candidates.append(([c[0]],[c[1]]))
+
                         else:
                         # check by contact area
                             area = self._get_contact_area(c[0], c[1])
@@ -473,23 +472,17 @@ class ParseShapesIntersection():
                                 candidates.append(([c[0]],[c[1]]))
 
                 if has_contact:
-                    # option to merge subshapes by part
-                    #print('nb_contact',len(candidates))
                     if merge_by_part:
                         candidates = self._merge_subshapes_by_part(candidates)
-                        #print('nb_merge',len(candidates))
                     
                     elif merge_by_proximity:
                         candidates = self._merge_subshapes_by_proximity(candidates)
-                        #print('nb_merge',len(candidates))
 
                     # defined the master and slave
                     ms = self._master_and_slave_from_area(candidates)
-                    #print('nb ms',len(ms))
 
                     # extract the sid and subshape indices
                     group = self._extract_sid_and_indices(ms)
-                    #print('nb group',len(group))
                     
                 return has_contact,tuple(group)
 

@@ -132,10 +132,10 @@ class ContactAuto(QObject):
 
         combine = list(itertools.combinations(self.parts, 2))
         nb_comb = len(combine)
-
+        self.progess_autocontact.emit(5)
         for i in range(len(combine)):
             # emit progress
-            self.progess_autocontact.emit(int((i)/nb_comb*100))
+            self.progess_autocontact.emit(int((i)/nb_comb*100)-5)
             res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=gap,tol=angle,merge_by_part=merge_by_part, merge_by_proximity=merge_by_proximity)
 
             if res:
@@ -148,7 +148,7 @@ class ContactAuto(QObject):
 
                     self.Contact.create_from_groupItem(grp1, grp2)
 
-        # debug
+        # debug some issues with this function
         self.Contact.check_adjacent_slave_group()
 
         # update table
