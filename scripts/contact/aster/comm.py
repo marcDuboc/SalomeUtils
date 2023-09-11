@@ -272,13 +272,12 @@ class MakeComm:
 
         return str_frictionless + '\t  ' + ')\n'
     
-    def process(self):
-        bonded = self.makeBonded()
+    def process(self,bonded_regroup_master=True):
+        bonded = self.makeBonded(bonded_regroup_master)
         sliding = self.makeSliding()
         friction = self.makeFriction()
         frictionless = self.makeFrictionless()
         return bonded + sliding + friction + frictionless
-
 
 if __name__ == '__main__' :
     # load the json file with respect of the platform (windows or linux). Input path as argument

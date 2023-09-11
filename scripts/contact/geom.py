@@ -206,6 +206,7 @@ class ShapeCoincidence():
         dir_diff = np.arccos(
             np.clip(np.dot(dir1_normalized, dir2_normalized), -1.0, 1.0))
         if not (np.isclose(dir_diff, 0, atol=tolerance) or np.isclose(dir_diff, np.pi, atol=tolerance)):
+            logging.info(f"dir_diff: {dir_diff}")
             return False
 
         # Vérifier la coïncidence des axes
@@ -216,6 +217,7 @@ class ShapeCoincidence():
 
         if distance_centers_to_line1 > (cylinder1['radius'] + tolerance) or \
                 distance_centers_to_line2 > (cylinder2['radius'] + tolerance):
+            logging.info(f"distance_centers_to_line1: {distance_centers_to_line1}")
             return False
 
         # Check if overlap between cylinders along the axis
@@ -224,6 +226,7 @@ class ShapeCoincidence():
         # 1% of the smallest length
         gap_mini = min(cylinder1['length'], cylinder2['length'])*0.01
         if (distance_centers + gap_mini) > (cylinder1['length'] / 2 + cylinder2['length'] / 2):
+            logging.info(f"distance_centers: {distance_centers}")
             return False
 
         # check if diameter are equal and area contact is not null
@@ -232,10 +235,12 @@ class ShapeCoincidence():
             props = geompy.BasicProperties(common)
             area_com = props[1]
             if area_com == 0.0:
+                logging.info(f"area_com: {area_com}")
                 return False
 
         # Compare radius
         if (abs(cylinder1['radius'] - cylinder2['radius']) > gap):
+            logging.info(f"radius: {abs(cylinder1['radius'] - cylinder2['radius'])}")
             return False
 
         return True
@@ -451,15 +456,13 @@ class ParseShapesIntersection():
                 for c in combinaison:
                     try:
                         connected, _, _ = geompy.FastIntersect(c[0], c[1], gap)
-                        logging.info(f"FastIntersect: {connected}")
                     
                     except:
                         connected = False
 
                     if connected:
                         # check for shape coincidence
-                        if self.Coincidence.are_coincident(c[0], c[1]):
-                            logging.info(f"Coincidence: {True}")
+                        if self.Coincidence.are_coincident(c[0],c[1]):
                             has_contact = True
                             candidates.append(([c[0]],[c[1]]))
 

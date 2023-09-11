@@ -24,7 +24,7 @@ class ContactGUI(QWidget):
     # define custom signals
     load_compound = pyqtSignal()
     closing = pyqtSignal()
-    export_contact = pyqtSignal(str,str)
+    export_contact = pyqtSignal(str,str,bool)
 
     def __init__(self):
         super(ContactGUI, self).__init__()
@@ -114,15 +114,26 @@ class ContactGUI(QWidget):
         self.bt_export.setIcon(QIcon(os.path.join(IMG_PATH,'save.png')))
         # create checkbox for export file json
         self.cb_export_json = QCheckBox("Raw format (*.json)", self)
-        self.cb_export_json.setChecked(True)
-        #create checkbox for export file comm
-        self.cb_export_comm = QCheckBox("Aster format (*.comm)", self)
-        self.cb_export_comm.setChecked(False)
+        self.cb_export_json.setChecked(False)
+
+        #create groupbox for export ASTER comm
+        self.gp_export_comm = QGroupBox("Aster format (*.comm)", self)
+        self.gp_export_comm.setCheckable(True)
+        self.gp_export_comm.setChecked(True)
+
+        #create checkbox for options exports ASTER
+        self.cb_export_aster_regroup= QCheckBox("Regroup masters on same slave (LIAISON_MAIL)", self)
+        self.cb_export_aster_regroup.setChecked(True)
+
+        #create hbox for aster options
+        self.hbox_1 = QHBoxLayout()
+        self.hbox_1.addWidget(self.cb_export_aster_regroup)
+        self.gp_export_comm.setLayout(self.hbox_1)
 
         #add checkbox in a horizontal layout
-        self.hbox_0 = QHBoxLayout()
+        self.hbox_0 = QVBoxLayout()
         self.hbox_0.addWidget(self.cb_export_json)
-        self.hbox_0.addWidget(self.cb_export_comm)
+        self.hbox_0.addWidget(self.gp_export_comm)
 
         # put the bouton in a horizontal layout
         self.hbox = QHBoxLayout()
@@ -156,7 +167,8 @@ class ContactGUI(QWidget):
         self.sl_transparency.valueChanged.connect(self.set_compound_part_transparency)
         self.bt_export.clicked.connect(self.select_file)
         self.cb_export_json.stateChanged.connect(self.on_change_export_json)
-        self.cb_export_comm.stateChanged.connect(self.on_change_export_comm)
+        self.gp_export_comm.toggled.connect(self.on_change_export_comm)
+        #self.gp_export_comm.stateChanged.connect(self.on_change_export_comm)
         
     # slots
     @pyqtSlot(str)
@@ -190,7 +202,7 @@ class ContactGUI(QWidget):
         options |= QFileDialog.DontUseNativeDialog
         name, _ = QFileDialog.getSaveFileName(self, "Export file","","Json (*.json);Comm (*.comm)", options=options)
         if name:
-            if self.cb_export_comm.isChecked():
+            if self.gp_export_comm.isChecked():
                 export = 'ASTER'
                 format = '.comm'
             else:
@@ -205,22 +217,23 @@ class ContactGUI(QWidget):
             self.le_export.setText(name)
             self.file_name = name
             
-            if self.cb_export_comm.isChecked():
+            if self.gp_export_comm.isChecked():
                 export = 'ASTER'
             else:
                 export = 'RAW'
-            self.export_contact.emit(name,export)
+                
+            self.export_contact.emit(name,export,self.cb_export_aster_regroup.isChecked())
 
     @pyqtSlot(int)
     def on_change_export_json(self):
         if self.cb_export_json.isChecked():
-            self.cb_export_comm.setChecked(False)
+            self.gp_export_comm.setChecked(False)
         else:
-            self.cb_export_comm.setChecked(True)
+            self.gp_export_comm.setChecked(True)
 
-    @pyqtSlot(int)
+    @pyqtSlot(bool)
     def on_change_export_comm(self):
-        if self.cb_export_comm.isChecked():
+        if self.gp_export_comm.isChecked():
             self.cb_export_json.setChecked(False)
         else:
             self.cb_export_json.setChecked(True)

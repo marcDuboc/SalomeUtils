@@ -7,7 +7,7 @@
 import os
 import time
 import inspect
-from PyQt5.QtWidgets import QPushButton, QWidget, QGridLayout, QLabel, QLineEdit, QGroupBox, QHBoxLayout,QDoubleSpinBox, QCheckBox,QProgressBar
+from PyQt5.QtWidgets import QPushButton, QWidget, QGridLayout, QLabel, QLineEdit, QGroupBox, QHBoxLayout,QDoubleSpinBox, QCheckBox,QProgressBar, QVBoxLayout
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 
@@ -15,7 +15,7 @@ from contact.cgui import IMG_PATH
 
 class AutoWindows(QWidget):
     partSelection = pyqtSignal()
-    contactRun = pyqtSignal(float,float,bool,bool)
+    contactRun = pyqtSignal(float,float,bool,bool,bool)
 
     def __init__(self):
         super().__init__()
@@ -62,7 +62,17 @@ class AutoWindows(QWidget):
         self.hbox_options = QHBoxLayout()
         self.hbox_options.addWidget(self.cb_merge_by_part)
         self.hbox_options.addWidget(self.cb_merge_by_proximity)
-        self.gp_options.setLayout(self.hbox_options)
+
+        # create checkbox swap adjacent slaves on same part
+        self.cb_swap_adjacent_slaves = QCheckBox("avoid adjacent salves on same part", self)
+        self.cb_swap_adjacent_slaves.setChecked(False)
+
+        # put the checkbox in a vertical layout
+        self.vbox_options = QVBoxLayout()
+        self.vbox_options.addLayout(self.hbox_options)
+        self.vbox_options.addWidget(self.cb_swap_adjacent_slaves)
+
+        self.gp_options.setLayout(self.vbox_options)
 
         # create groupbox compute
         self.gp_compute = QGroupBox("Compute", self)
@@ -109,7 +119,8 @@ class AutoWindows(QWidget):
         ctol = self.sb_ctol.value()
         merge_by_part = self.cb_merge_by_part.isChecked()
         merge_by_proximity = self.cb_merge_by_proximity.isChecked()
-        self.contactRun.emit(gap,ctol,merge_by_part,merge_by_proximity)
+        avoid_adjacent_slaves = self.cb_swap_adjacent_slaves.isChecked()
+        self.contactRun.emit(gap,ctol,merge_by_part,merge_by_proximity,avoid_adjacent_slaves)
         
     @pyqtSlot(list)
     def set_parts(self, parts):

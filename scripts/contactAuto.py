@@ -127,15 +127,20 @@ class ContactAuto(QObject):
                 self.parts.append(id)
             self.parts_selected.emit(part_ids)
 
-    @pyqtSlot(float, float, bool,bool)
-    def process_contact(self, gap, angle, merge_by_part, merge_by_proximity):
+    @pyqtSlot(float, float, bool,bool,bool)
+    def process_contact(self, gap, angle, merge_by_part, merge_by_proximity, avoid_adjacent_slaves:bool=False):
 
         combine = list(itertools.combinations(self.parts, 2))
         nb_comb = len(combine)
-        self.progess_autocontact.emit(5)
+        self.progess_autocontact.emit(1)
+
         for i in range(len(combine)):
             # emit progress
-            self.progess_autocontact.emit(int((i)/nb_comb*100)-5)
+            progress = int((i)/nb_comb*100)-1
+            if avoid_adjacent_slaves:
+                progress = int((i)/nb_comb*100)-11
+            self.progess_autocontact.emit(progress)
+            
             res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=gap,tol=angle,merge_by_part=merge_by_part, merge_by_proximity=merge_by_proximity)
 
             if res:
@@ -149,7 +154,8 @@ class ContactAuto(QObject):
                     self.Contact.create_from_groupItem(grp1, grp2)
 
         # debug some issues with this function
-        self.Contact.check_adjacent_slave_group()
+        if avoid_adjacent_slaves:
+            self.Contact.check_adjacent_slave_group()
 
         # update table
         self.Gui.set_data(self.Contact.to_table_model())
@@ -167,8 +173,8 @@ class ContactAuto(QObject):
     def manual_contact(self, group_sid_1:str, group_sid_2:str):
         self.Contact.create_from_groupsID(group_sid_1, group_sid_2)
 
-    @pyqtSlot(str,str)
-    def export_contact(self, filename,export):
+    @pyqtSlot(str,str,bool)
+    def export_contact(self, filename,export, bonded_regroup_master:bool=True):
         if export == "RAW":
             self.Contact.export(filename)
             
@@ -178,7 +184,7 @@ class ContactAuto(QObject):
                 data.append(c.to_dict_for_export())
             Mk = MakeComm(data)
             with open(filename, 'w') as f:
-                f.write(Mk.process())
+                f.write(Mk.process(bonded_regroup_master))
 
 class MyDockWidget(QDockWidget):
     widgetClosed = pyqtSignal()
