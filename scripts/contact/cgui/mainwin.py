@@ -171,9 +171,10 @@ class ContactGUI(QWidget):
         #self.gp_export_comm.stateChanged.connect(self.on_change_export_comm)
         
     # slots
-    @pyqtSlot(str)
-    def on_compound_selected(self, master_compound_name):
+    @pyqtSlot(str,str)
+    def on_compound_selected(self, master_compound_name,color='black'):
         self.lb_root.setText(master_compound_name)
+        self.lb_root.setStyleSheet(f"color: {color};")
 
     @pyqtSlot(list)
     def set_compounds_parts(self, parts):

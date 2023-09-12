@@ -8,11 +8,18 @@ import os
 from PyQt5.QtWidgets import QWidget, QGridLayout, QLineEdit,QGroupBox, QHBoxLayout, QPushButton
 from PyQt5.QtGui import QIcon
 from contact.cgui import IMG_PATH
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 
 class ManualWindows(QWidget):
+    """Manual contact creation windows"""
+
+    select_grp = pyqtSignal(int)
+    create_contact = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.validated_input = [False, False]
 
     def initUI(self):
         self.setWindowTitle('Manual Contact creation')
@@ -63,3 +70,47 @@ class ManualWindows(QWidget):
 
         #signal connection
         self.btnCancel.clicked.connect(self.hide)
+        self.bt_grp1.clicked.connect(self.on_btn_grp1)
+        self.bt_grp2.clicked.connect(self.on_btn_grp2)
+        self.btnOK.clicked.connect(self.on_btnOk)
+
+    # Slot ====================================================================
+    @pyqtSlot()
+    def on_btn_grp1(self):
+        self.select_grp.emit(0)
+
+    @pyqtSlot()
+    def on_btn_grp2(self):
+        self.select_grp.emit(1)
+
+    @pyqtSlot(int, bool)
+    def on_grp_validated(self, grp, validated,msg,color):
+        if validated:
+            if grp==0:
+                self.le_grp1.setText(msg)
+                self.le_grp1.setStyleSheet(f"color: {color};")
+                self.validated_input[0] = True
+            else:
+                self.le_grp2.setText(msg)
+                self.le_grp2.setStyleSheet(f"color: {color};")
+                self.validated_input[1] = True
+        else:
+            if grp==0:
+                self.le_grp1.setText(msg)
+                self.le_grp1.setStyleSheet(f"color: {color};")
+            else:
+                self.le_grp2.setText(msg)
+                self.le_grp2.setStyleSheet(f"color: {color};")
+
+    def on_btnOk(self):
+        if self.validated_input[0] and self.validated_input[1]:
+            self.hide()
+            self.validated_input = [False, False]
+            self.le_grp1.setText("Please select a group")
+            self.le_grp1.setStyleSheet("color: black;")
+            self.le_grp2.setText("Please select a group")
+            self.le_grp2.setStyleSheet("color: black;")
+            self.create_contact.emit()
+
+
+       

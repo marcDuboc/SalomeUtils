@@ -46,11 +46,17 @@ gg = salome.ImportComponentGUI("GEOM")
 salome.salome_init()
 
 class ContactAuto(QObject):
-    compound_selected = pyqtSignal(str)
+    compound_selected = pyqtSignal(str,str)
+
+    # auto contact signals
     parts_selected = pyqtSignal(list)
     existing_parts = pyqtSignal(list)
     progess_autocontact = pyqtSignal(int)
     autocontact_completed = pyqtSignal()
+
+    # manual contact signals
+    manual_grp_validated = pyqtSignal(int, bool,str,str)
+    manual_contact_validated = pyqtSignal(bool)
 
     def __init__(self):
         super(ContactAuto, self).__init__()
@@ -61,6 +67,8 @@ class ContactAuto(QObject):
         self.Intersect = ParseShapesIntersection()
 
         self.parts =[]
+        self.compound_parts = []
+        self.manual_selection = dict(grp1=None, grp2=None)
 
         self.compound_selected.connect(self.Gui.on_compound_selected)
         self.Gui.load_compound.connect(self.select_compound)
@@ -78,39 +86,59 @@ class ContactAuto(QObject):
     def select_compound(self):
         selCount = salome.sg.SelectedCount()
         if selCount == 0:
-            self.compound_selected.emit("No compound selected!")
+            self.compound_selected.emit("No compound selected!","red")
             return
+        
         elif selCount > 1:
-            self.compound_selected.emit("Select only one compound!")
+            self.compound_selected.emit("Select only one compound!","red")
             return
+        
         else:
             id = salome.sg.getSelected(0)
-            name = salome.IDToObject(id).GetName()
-            self.compound_selected.emit(name+ '\t'+ id)
+            obj = salome.IDToObject(id)
 
-            # parse for existing contacts
-            self.Tree.parse_tree_objects(id)
-            existing_contact = self.Tree.get_contacts()
+            try :
+                otype = obj.GetType()
+                name = salome.IDToObject(id).GetName()
+            except:
+                self.compound_selected.emit("Please Select a compound!","red")
+                return
+            
+            if otype != 27:
+                self.compound_selected.emit("Please Select a compound!","red")
+                return
+            
+            else:
+                self.compound_selected.emit(name+ '\t'+ id,"green")
 
-            # emit existing parts to Gui
-            self.existing_parts.emit([x.get_sid() for x in self.Tree.get_parts()])
+                # parse for existing contacts
+                self.Tree.parse_tree_objects(id)
+                existing_contact = self.Tree.get_contacts()
 
-            # add existing contacts to contactManager
-            self.Contact.create_from_tree(existing_contact)
+                # emit existing parts to Gui
+                self.compound_parts =[x.get_sid() for x in self.Tree.get_parts()]
+                self.existing_parts.emit(self.compound_parts)
 
-            # update table
-            self.Gui.set_data(self.Contact.to_table_model())
+                # add existing contacts to contactManager
+                self.Contact.create_from_tree(existing_contact)
 
-            #connect signals
-            self.Gui.swapItem.swap.connect(self.Contact.swap_master_slave_by_id)
-            self.Gui.hideShowItem.hideShow.connect(self.Contact.hideshow_by_id)
-            self.Gui.deleteItem.delContact.connect(self.Contact.delete_by_id)
-            self.Gui.typeItem.changeType.connect(self.Contact.change_type_by_id)
-            self.Gui.autoWindow.partSelection.connect(self.select_parts)
-            self.parts_selected.connect(self.Gui.autoWindow.set_parts)
-            self.Gui.autoWindow.contactRun.connect(self.process_contact)
-            self.progess_autocontact.connect(self.Gui.autoWindow.on_progress)
-            self.autocontact_completed.connect(self.Gui.autoWindow.on_completed)
+                # update table
+                self.Gui.set_data(self.Contact.to_table_model())
+
+                #connect signals
+                self.Gui.swapItem.swap.connect(self.Contact.swap_master_slave_by_id)
+                self.Gui.hideShowItem.hideShow.connect(self.Contact.hideshow_by_id)
+                self.Gui.deleteItem.delContact.connect(self.Contact.delete_by_id)
+                self.Gui.typeItem.changeType.connect(self.Contact.change_type_by_id)
+                self.Gui.autoWindow.partSelection.connect(self.select_parts)
+                self.parts_selected.connect(self.Gui.autoWindow.set_parts)
+                self.Gui.autoWindow.contactRun.connect(self.process_contact)
+                self.progess_autocontact.connect(self.Gui.autoWindow.on_progress)
+                self.autocontact_completed.connect(self.Gui.autoWindow.on_completed)
+                self.Gui.manualWindow.select_grp.connect(self.selected_grp)
+                self.manual_grp_validated.connect(self.Gui.manualWindow.on_grp_validated)
+                self.Gui.manualWindow.create_contact.connect(self.create_manual_grp)
+            
     
     @pyqtSlot()
     def select_parts(self):
@@ -123,8 +151,12 @@ class ContactAuto(QObject):
         elif selCount > 1:
             for i in range(selCount):
                 id = salome.sg.getSelected(i)
-                part_ids.append(id)
-                self.parts.append(id)
+                logging.debug("select_parts: {}".format(id))
+                logging.debug("compound_parts: {}".format(self.compound_parts))
+
+                if id in self.compound_parts:
+                    part_ids.append(id)
+                    self.parts.append(id)
             self.parts_selected.emit(part_ids)
 
     @pyqtSlot(float, float, bool,bool,bool)
@@ -169,9 +201,8 @@ class ContactAuto(QObject):
         # clear parts
         self.parts.clear()
 
-    @pyqtSlot(str,str)
-    def manual_contact(self, group_sid_1:str, group_sid_2:str):
-        self.Contact.create_from_groupsID(group_sid_1, group_sid_2)
+        # close auto window
+        self.Gui.autoWindow.close()
 
     @pyqtSlot(str,str,bool)
     def export_contact(self, filename,export, bonded_regroup_master:bool=True):
@@ -185,6 +216,43 @@ class ContactAuto(QObject):
             Mk = MakeComm(data)
             with open(filename, 'w') as f:
                 f.write(Mk.process(bonded_regroup_master))
+
+    # manual selection of groups
+    @pyqtSlot(int)
+    def selected_grp(self,index:int):
+        selCount = salome.sg.SelectedCount()
+        id = salome.sg.getSelected(0)
+        obj = salome.IDToObject(id)
+        grp = ('grp1','grp2')
+        logging.debug("selected_grp: {}".format(index))
+        if selCount == 1:
+            if obj.GetType()==37 and obj.GetShapeType()._v== 4:
+                complement = lambda x: 0 if x==1 else 1
+                complement_index = complement(index)
+
+                if self.manual_selection[grp[complement_index]] == id:
+                    self.manual_grp_validated.emit(index,False,msg="Please select a different Group!",color="red")
+                
+                else:
+                    self.manual_selection[grp[index]] = id
+                    self.manual_grp_validated.emit(index,True,msg="Ok",color="green")
+
+            else:
+                self.manual_grp_validated.emit(index,False,msg="Please select one face group!",color="red")
+        else:
+            self.manual_grp_validated.emit(index,False,msg="Please select only one group!",color="red")
+
+    @pyqtSlot()
+    def create_manual_grp(self):
+        if self.manual_selection['grp1'] is not None or self.manual_selection['grp2'] is not None:
+            res = self.Contact.create_from_groupsID(self.manual_selection['grp1'], self.manual_selection['grp2'])
+
+            for k in self.manual_selection.keys():
+                self.manual_selection[k] = None
+
+            # update table
+            self.Gui.set_data(self.Contact.to_table_model())
+
 
 class MyDockWidget(QDockWidget):
     widgetClosed = pyqtSignal()

@@ -411,15 +411,11 @@ class ContactManagement():
     # create contact manually by selecting 2 groups. the original groups are deleted. New group are created using contactPair class. 
     def create_from_groupsID(self, group_1_sid:str, group_2_sid:str):
 
-        # get the shapes from the group
-        sub_1 = self._get_subshape_from_group(group_1_sid)
-        sub_2 = self._get_subshape_from_group(group_2_sid)
-
        # create group item
         grp1 = GroupItem()
         grp2= GroupItem()
-        grp1.create(group_1_sid, sub_1)
-        grp2.create(group_2_sid, sub_2)
+        grp1.create_from_group(group_1_sid)
+        grp2.create_from_group(group_2_sid)
 
         # check if the contact already exists
         if self._does_contact_pairs_exist(grp1, grp2):
