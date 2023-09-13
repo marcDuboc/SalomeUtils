@@ -210,11 +210,12 @@ class MakeComm:
         return "_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}'),COULOMB={}, E_T ={}),".format(slave,master,coulomb,e_t)  
     
     def regroupMasterbySlave(self, contacts:list):
-        masterSalveId = dict()
+        masterSalveId = defaultdict(list)
+        #masterSalveId = dict()
         for item in contacts:
-            if item["slave"] not in masterSalveId.keys():
-                masterSalveId[item["slave"]] = [item["master"]]
-            else:
+            #if item["slave"] not in masterSalveId.keys():
+                #masterSalveId[item["slave"]] = [item["master"]]
+            #else:
                 masterSalveId[item["slave"]].append(item["master"])
         return masterSalveId
     

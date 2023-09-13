@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QComboBox, QItemDelegate,QStyle
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal, QEvent
 from contact.cgui import IMG_PATH
+from contact import logging
 
 class TypeDelegate(QItemDelegate):
     changeType = pyqtSignal(int,str) 
@@ -71,6 +72,15 @@ class SwapDelegate(QItemDelegate):
         if event.type() == QEvent.MouseButtonRelease:
             # get the id from the data model
             id = index.model().data(index.siblingAtColumn(0), Qt.DisplayRole)
+
+            # swap value between column 3 and 4
+            value_3 = index.model().data(index.siblingAtColumn(3), Qt.DisplayRole)
+            value_4 = index.model().data(index.siblingAtColumn(4), Qt.DisplayRole)
+            model.setData(index.siblingAtColumn(3), value_4, Qt.EditRole)
+            model.setData(index.siblingAtColumn(4), value_3, Qt.EditRole)
+            
+            # update view
+            
             self.swap.emit(id)
             return True
         
@@ -113,10 +123,10 @@ class HideShowDelegate(QItemDelegate):
         return super(HideShowDelegate, self).editorEvent(event, model, option, index)
 
 class TableModel(QAbstractTableModel):
-    def __init__(self, data):
+    def __init__(self, data, header=None):
         super().__init__()
         self._data = data
-        self.header=['ID','Name','Type','Display','Swap','Delete']
+        self.header=['ID','Name','Type','Master','Slave','Display','Swap','Delete']
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)
@@ -141,14 +151,13 @@ class TableModel(QAbstractTableModel):
             # if value is blank
             if value in ('',' '):
                 return False
-
             self._data[index.row()][index.column()] = value
-            
+            self.dataChanged.emit(index, index)
         return True
         
     def flags(self, index):
         default_flags = super(TableModel, self).flags(index)
-        if index.column() in (0,1,3,4):  
+        if index.column() in (0,1,3,4,5,6,7):  
             return default_flags & ~Qt.ItemIsEditable
         return default_flags | Qt.ItemIsEditable
 

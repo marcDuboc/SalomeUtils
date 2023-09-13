@@ -100,11 +100,12 @@ class ContactAuto(QObject):
             try :
                 otype = obj.GetType()
                 name = salome.IDToObject(id).GetName()
+
             except:
                 self.compound_selected.emit("Please Select a compound!","red")
                 return
             
-            if otype != 27:
+            if otype not in (27,1,):
                 self.compound_selected.emit("Please Select a compound!","red")
                 return
             
@@ -148,12 +149,10 @@ class ContactAuto(QObject):
         if selCount < 2:
             self.parts_selected.emit([])
 
+
         elif selCount > 1:
             for i in range(selCount):
                 id = salome.sg.getSelected(i)
-                logging.debug("select_parts: {}".format(id))
-                logging.debug("compound_parts: {}".format(self.compound_parts))
-
                 if id in self.compound_parts:
                     part_ids.append(id)
                     self.parts.append(id)
@@ -272,7 +271,7 @@ d.setWidget(contact_auto_instance.Gui)
 d.setAttribute(Qt.WA_DeleteOnClose)
 d.setWindowFlags(d.windowFlags() | Qt.WindowStaysOnTopHint)
 d.setWindowTitle("3D Contacts")
-d.setGeometry(600, 300, 600, 600)
+d.setGeometry(600, 300, 400, 600)
 d.widgetClosed.connect(delete_contact_auto_instance)
 
 d.show()

@@ -169,7 +169,10 @@ class ContactPair():
             return cont
 
     def to_table_model(self):
-        return OrderedDict(id=self.id_instance, name=self.name, type=self.type, visible=self.visible)
+        parents_name = self.get_parents_name()
+        master_name = parents_name[self.master]
+        slave_name = parents_name[1-self.master]
+        return OrderedDict(id=self.id_instance, name=self.name,type=self.type,master=master_name,slave=slave_name,visible=self.visible)
 
     def __str__(self):
         return str(self.to_dict())
@@ -471,9 +474,13 @@ class ContactManagement():
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.visible = True
-                for sid in pairs.get_groups_sid():
+                for i,sid in enumerate(pairs.get_groups_sid()):
                     salome.sg.Display(sid)
                     Gg.setDisplayMode(sid,2)
+                    if i==pairs.master:
+                        Gg.setNameMode(sid, False)
+                    else:
+                        Gg.setNameMode(sid, True)
                 break
 
     # hide pairs                
@@ -482,6 +489,7 @@ class ContactManagement():
             if pairs.id_instance == id:
                 pairs.visible = False
                 for sid in pairs.get_groups_sid():
+                    Gg.setNameMode(sid, False)
                     Gg.eraseGO(sid)
                 break
 
@@ -497,6 +505,8 @@ class ContactManagement():
         for pairs in self._contacts:
             if pairs.id_instance == id:
                 pairs.swap_master_slave()
+                if pairs.visible:
+                    self.show(id)
                 break
 
     # hide/show pairs

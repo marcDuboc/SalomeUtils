@@ -7,7 +7,7 @@
 import os
 import time
 import inspect
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout,QLabel, QLineEdit,QTableView, QGroupBox, QHBoxLayout,QCheckBox,QSlider,QFileDialog
+from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout,QLabel, QLineEdit,QTableView, QGroupBox, QHBoxLayout,QCheckBox,QSlider,QFileDialog,QHeaderView
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 from contact.cgui.abstract import TypeDelegate, DeleteDelegate, SwapDelegate, HideShowDelegate, TableModel
@@ -50,12 +50,10 @@ class ContactGUI(QWidget):
 
         self.table_view = QTableView(self)
         self.table_view.setItemDelegateForColumn(2, self.typeItem)
-        self.table_view.setItemDelegateForColumn(5, self.deleteItem)
-        self.table_view.setItemDelegateForColumn(4, self.swapItem)
-        self.table_view.setItemDelegateForColumn(3, self.hideShowItem)
-        self.table_view.setSizeAdjustPolicy(QTableView.AdjustToContents)
-        self.table_view.resizeColumnsToContents()
-
+        self.table_view.setItemDelegateForColumn(7, self.deleteItem)
+        self.table_view.setItemDelegateForColumn(6, self.swapItem)
+        self.table_view.setItemDelegateForColumn(5, self.hideShowItem)
+                
         #=======================
         # select root component
         self.l_root = QLabel("Root compound: ", self)
@@ -239,8 +237,8 @@ class ContactGUI(QWidget):
         else:
             self.cb_export_json.setChecked(True)
 
-    def resizeEvent(self, event):
-         self.table_view.resizeColumnsToContents()
+    #def resizeEvent(self, event):
+    #     self.table_view.resizeColumnsToContents()
 
     def closeEvent(self, event):
         print("Fermeture de la fenêtre, suppression des instances...")
@@ -259,6 +257,16 @@ class ContactGUI(QWidget):
         if len(data) > 0:
             self.model = TableModel(data)
             self.table_view.setModel(self.model)  
+
+            header = self.table_view.horizontalHeader()
+            header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(3, QHeaderView.Stretch)
+            header.setSectionResizeMode(4, QHeaderView.Stretch)
+            header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(6, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(7, QHeaderView.ResizeToContents)
 
     def openAutoWindow(self):
         self.autoWindow.show()
