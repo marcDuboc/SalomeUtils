@@ -138,6 +138,18 @@ class Contacts:
             slave_index = 1 if master_index == 0 else 0
             return {"id":id,"master":contact.subshapes[master_index],"slave":contact.subshapes[slave_index]}
 
+    def getParentName(self,id):
+        contact = getattr(self,id)
+        master_index= contact.master_id
+        slave_index = 1 if master_index == 0 else 0
+        return {"id":id,"master":contact.shapes[master_index],"slave":contact.shapes[slave_index]}
+    
+    def getParentID(self,id):
+        contact = getattr(self,id)
+        master_index= contact.master_id
+        slave_index = 1 if master_index == 0 else 0
+        return {"id":id,"master":contact.shapes_id[master_index],"slave":contact.shapes_id[slave_index]}
+        
     def shapeNameFromShapeID(self):
         """return a dict of shape name from shape id"""
         d= defaultdict(list)
@@ -211,27 +223,38 @@ class MakeComm:
     
     def regroupMasterbySlave(self, contacts:list):
         masterSalveId = defaultdict(list)
-        #masterSalveId = dict()
+        contactID = defaultdict(list)
         for item in contacts:
-            #if item["slave"] not in masterSalveId.keys():
-                #masterSalveId[item["slave"]] = [item["master"]]
-            #else:
-                masterSalveId[item["slave"]].append(item["master"])
-        return masterSalveId
+                # add salve parent indice of the salve to the key => indice of subshape are the same for each instance of the same part
+                key = (item["slave"],item["parent_id"])
+                contactID[key]=item["id"]
+                if item["master"] not in masterSalveId[key]:
+                    masterSalveId[key].append(item["master"])
+
+        # remove salve parent_id from the key
+        regrouped = dict()
+        for k,v in masterSalveId.items():
+            key = contactID[k]
+            regrouped[key] = v
+        return regrouped
     
     def makeBonded(self,reGroup=True):
         str_bonded = 'bonded = (\n'
         bonded = self.Contacts.getContactByType("BONDED")
         bonded_id = [item.id for item in bonded]
-        masterSalveIdList = [self.Contacts.getMasterSlaveID(i) for i in bonded_id]
+        msIdList = [self.Contacts.getMasterSlaveID(i) for i in bonded_id]
+        data_for_regroup=msIdList.copy()
 
+        for item in data_for_regroup:
+            id = item["id"]
+            item["parent_id"] = self.Contacts.getParentID(id)['slave']
+        
         shapeName = self.Contacts.shapeNameFromShapeID()
-        subshapeName = self.Contacts.subshapeNameFromSubshapeID()
 
         if reGroup:
-            regrouped = self.regroupMasterbySlave(masterSalveIdList)
+            regrouped = self.regroupMasterbySlave(data_for_regroup)
             for k, v in regrouped.items():
-                slave_name = subshapeName[k]
+                slave_name = self.Contacts.getMasterSlaveName(k)['slave']
                 master_name = [shapeName[m] for m in v]
                 str_bonded += '\t  ' + self.strFBonded(master_name,slave_name)+"\n"
         else:
@@ -294,7 +317,7 @@ if __name__ == '__main__' :
     # ________________________________________________________________
 
     # replace the file with your json file absolute path
-    file = "E:\GIT_REPO\SalomeUtils\debug\contact.json"
+    file = "E:\\GIT_REPO\\SalomeUtils\\debug\\test.json"
     data = loadJson(file)
     comm = MakeComm(data)
     bb = comm.makeBonded()
