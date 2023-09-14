@@ -211,7 +211,7 @@ class MakeComm:
         # master as [m1,m2,...] to m as ('m1','m1',...)
         m = MakeComm._listNameToStrTuple(master)
         s = MakeComm._listNameToStrTuple(slave)
-        return "_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}')),".format(slave,master)  
+        return "_F(ALGO_CONT='PENALISATION',ADAPTATION='CYCLAGE',COEF_PENA_CONT=1.5E12,APPARIEMENT='MAIT_ESCL',NORMALE='MAIT',CONTACT_INIT='INTERPENETRE',GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}')),".format(slave,master)  
     
     def strFFriction(self,master,slave):
         # master as [m1,m2,...] to m as ('m1','m1',...)
