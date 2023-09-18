@@ -1,0 +1,70 @@
+DEBUT(LANG='FR')
+
+mesh = LIRE_MAILLAGE(UNITE=20)
+
+mesh = DEFI_GROUP(reuse=mesh,
+                  CREA_GROUP_NO=(_F(GROUP_MA_AXE=('B', ),
+                                    GROUP_NO_ORIG=('BS', ),
+                                    LONGUEUR=-1.0,
+                                    NOM='BC1',
+                                    OPTION='TUNNEL',
+                                    RAYON=5.0,
+                                    TOUT='OUI'),
+                                 _F(GROUP_MA_AXE=('B', ),
+                                    GROUP_NO_ORIG=('BE', ),
+                                    LONGUEUR=1.0,
+                                    NOM='BC2',
+                                    OPTION='TUNNEL',
+                                    RAYON=5.0,
+                                    TOUT='OUI')),
+                  MAILLAGE=mesh)
+
+model = AFFE_MODELE(AFFE=(_F(MODELISATION='3D',
+                             PHENOMENE='MECANIQUE',
+                             TOUT='OUI'),
+                          _F(GROUP_MA=('B', ),
+                             MODELISATION='POU_D_T',
+                             PHENOMENE='MECANIQUE')),
+                    MAILLAGE=mesh)
+
+elemprop = AFFE_CARA_ELEM(MODELE=model,
+                          POUTRE=_F(CARA=('R', ),
+                                    GROUP_MA=('B', ),
+                                    SECTION='CERCLE',
+                                    VALE=(2.0, ),
+                                    VARI_SECT='CONSTANT'))
+
+mater = DEFI_MATERIAU(ELAS=_F(E=210000.0,
+                              NU=0.3))
+
+fieldmat = AFFE_MATERIAU(AFFE=_F(MATER=(mater, ),
+                                 TOUT='OUI'),
+                         MAILLAGE=mesh)
+
+load = AFFE_CHAR_MECA(DDL_IMPO=_F(BLOCAGE=('DEPLACEMENT', ),
+                                  GROUP_MA=('F', )),
+                      FORCE_FACE=_F(FZ=-1000.0,
+                                    GROUP_MA=('L', )),
+                      LIAISON_RBE3=(_F(COEF_ESCL=(1.0, ),
+                                       DDL_ESCL=('DX-DY-DZ', ),
+                                       DDL_MAIT=('DX', 'DY', 'DZ', 'DRX', 'DRY', 'DRZ'),
+                                       GROUP_NO_ESCL=('BC1', ),
+                                       GROUP_NO_MAIT=('BS', )),
+                                    _F(COEF_ESCL=(1.0, ),
+                                       DDL_ESCL=('DX-DY-DZ', ),
+                                       DDL_MAIT=('DX', 'DY', 'DZ', 'DRX', 'DRY', 'DRZ'),
+                                       GROUP_NO_ESCL=('BC2', ),
+                                       GROUP_NO_MAIT=('BE', ))),
+                      MODELE=model)
+
+reslin = MECA_STATIQUE(CARA_ELEM=elemprop,
+                       CHAM_MATER=fieldmat,
+                       EXCIT=_F(CHARGE=load,
+                                TYPE_CHARGE='FIXE_CSTE'),
+                       MODELE=model)
+
+IMPR_RESU(FORMAT='MED',
+          RESU=_F(RESULTAT=reslin),
+          UNITE=80)
+
+FIN()

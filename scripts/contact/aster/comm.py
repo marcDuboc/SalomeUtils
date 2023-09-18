@@ -199,19 +199,19 @@ class MakeComm:
         # master as [m1,m2,...] to m as ('m1','m1',...)
         m = MakeComm._listNameToStrTuple(master)
         s = MakeComm._listNameToStrTuple(slave)
-        return "_F(GROUP_MA_ESCL={},GROUP_MA_MAIT={}),".format(s,m)
+        return "_F(GROUP_MA_ESCL={},\n\t\t GROUP_MA_MAIT={}),".format(s,m)
 
     def strFSliding(self,master,slave):
         # master as [m1,m2,...] to m as ('m1','m1',...)
         m = MakeComm._listNameToStrTuple(master)
         s = MakeComm._listNameToStrTuple(slave)
-        return "_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}'),DDL_MAIT = 'DNOR', DDL_ESCL = 'DNOR'),".format(slave,master)          
+        return "_F(GROUP_MA_ESCL=('{}'),\n\t\t GROUP_MA_MAIT=('{}'),\n\t\t DDL_MAIT = 'DNOR',\n\t\t DDL_ESCL = 'DNOR'),".format(slave,master)          
 
     def strFFrictionless(self,master,slave):
         # master as [m1,m2,...] to m as ('m1','m1',...)
         m = MakeComm._listNameToStrTuple(master)
         s = MakeComm._listNameToStrTuple(slave)
-        return "_F(ALGO_CONT='PENALISATION',ADAPTATION='CYCLAGE',COEF_PENA_CONT=1.5E12,APPARIEMENT='MAIT_ESCL',NORMALE='MAIT',CONTACT_INIT='INTERPENETRE',GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}')),".format(slave,master)  
+        return "_F(ALGO_CONT='PENALISATION',\n\t\t DAPTATION='CYCLAGE',\n\t\t COEF_PENA_CONT=1.5E12,\n\t\t APPARIEMENT='MAIT_ESCL',\n\t\t NORMALE='MAIT',\n\t\t CONTACT_INIT='INTERPENETRE',\n\t\t GROUP_MA_ESCL=('{}'),\n\t\t GROUP_MA_MAIT=('{}')),".format(slave,master)  
     
     def strFFriction(self,master,slave):
         # master as [m1,m2,...] to m as ('m1','m1',...)
@@ -219,7 +219,7 @@ class MakeComm:
         s = MakeComm._listNameToStrTuple(slave)
         coulomb = 0.5
         e_t= 10000
-        return "_F(GROUP_MA_ESCL=('{}'),GROUP_MA_MAIT=('{}'),COULOMB={}, E_T ={}),".format(slave,master,coulomb,e_t)  
+        return "_F(GROUP_MA_ESCL=('{}'),\n\t\t GROUP_MA_MAIT=('{}'),\n\t\t COULOMB={},\n\t\t E_T ={},),".format(slave,master,coulomb,e_t)  
     
     def regroupMasterbySlave(self, contacts:list):
         masterSalveId = defaultdict(list)
