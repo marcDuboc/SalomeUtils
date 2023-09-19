@@ -47,26 +47,18 @@ class ShapeProperties():
     FACE = dict()
     EDGE = dict()
     PLANE= dict(origin=Point(),axis=Vector())
-    DISK_CIRCLE = dict(origin=Point(),axis=Vector(), radius=1)
-    CYLINDER = dict(origin=Point(), axis=Vector(), radius=1, height=1)
-    SPHERE = dict(origin=Point(), radius=0.0, area=0.0)
+    DISK_CIRCLE = dict(origin=Point(),axis=Vector(), radius1=1)
+    CYLINDER = dict(origin=Point(), axis=Vector(), radius1=1, height=1)
+    SPHERE = dict(origin=Point(), radius1=0.0)
     CONE = dict(origin=Point(), axis=Vector(), radius1=1, radius2=0.0, height=1)
     TORUS = dict(origin=Point(), axis=Vector(), radius1=1, radius2=0.0)
     SEGMENT = dict(p1=Point(), p2=Vector())
-    CIRCLE = dict(origin=Point(), axis=Vector(), radius=1)
+    CIRCLE = dict(origin=Point(), axis=Vector(), radius1=1)
     ELLIPSE = dict(origin=Point(), axis=Vector(), radius1=1, radius2=0)
     VERTEX = dict(origin=Point())
     ARC_ELIPSE = dict(origin=Point(), axis=Vector(), radius1=1, radius2=0, p1=Point(), p2=Point())
-    ARC_CIRCLE = dict(origin=Point(), axis=Vector(), radius=1, p1=Point(), p2=Point())
+    ARC_CIRCLE = dict(origin=Point(), axis=Vector(), radius1=1, p1=Point(), p2=Point())
     LCS = dict(origin=Point(), x=Vector(), y=Vector(), z=Vector())
-    SPHERE2D = SPHERE
-    CYLINDER2D = CYLINDER
-    CONE2D = CONE
-    TORUS2D = TORUS
-    DISK_ELLIPSE = PLANE
-    POLYGON = PLANE
-    PLANAR = PLANE
-    LINE = SEGMENT
 
     Template = dict(
         PLANE=PLANE,
@@ -81,7 +73,7 @@ class ShapeProperties():
         ARC_ELIPSE=ARC_ELIPSE,
         ARC_CIRCLE=ARC_CIRCLE,
         LCS=LCS,
-        SPHERE2D=SPHERE2D,
+        SPHERE2D=SPHERE,
         CYLINDER2D = CYLINDER,
         CONE2D = CONE,
         DISK_CIRCLE= DISK_CIRCLE,
@@ -115,6 +107,7 @@ class ShapeProperties():
         if kind in ShapeProperties.Template.keys():
             template = ShapeProperties.Template[kind]
             kos_lst.pop(0)
+
             for k,v in template.items():
                 if type(v) == Point:
                     p= Point()
@@ -128,6 +121,7 @@ class ShapeProperties():
                             p.z = val
 
                     template[k] = p
+
                 elif type(v) == Vector:
                     v= Vector()
                     for i in range(3):
@@ -139,8 +133,10 @@ class ShapeProperties():
                         elif i ==2:
                             v.vz = val
                     template[k] = v
+
                 else:
-                    template[k] = kos_lst.pop(0)
+                    if len(kos_lst)>0:
+                        template[k] = kos_lst.pop(0)
 
 
         # result properties
