@@ -1,7 +1,7 @@
 import numpy as np
-from copy import deepcopy
 import salome
 from salome.geom import geomBuilder
+
 Geompy = geomBuilder.New()
 
 class Point():
@@ -35,111 +35,225 @@ class Vector():
         return f"Vector({self.vx}, {self.vy}, {self.vz})"
 
 class BasicProperties():
-    def __init__(self, args):
-        self.length= args[0]
-        self.area = args[1]
-        self.volume = args[2]
+    def __init__(self, length=0.0, area=0.0, volume=0.0):
+        self.length = length
+        self.area = area
+        self.volume = volume
 
-class ShapeProperties():
-    # TODO check if face are canonical and get properties
-    # use geompy tesselate + alogrithm to get is planar or not
+    def set_basic_properties(self, obj):
+        basic = Geompy.BasicProperties(obj)
+        self.length = basic[0]
+        self.area = basic[1]
+        self.volume = basic[2]
 
-    FACE = dict()
-    EDGE = dict()
-    PLANE= dict(origin=Point(),axis=Vector())
-    DISK_CIRCLE = dict(origin=Point(),axis=Vector(), radius1=1)
-    CYLINDER = dict(origin=Point(), axis=Vector(), radius1=1, height=1)
-    SPHERE = dict(origin=Point(), radius1=0.0)
-    CONE = dict(origin=Point(), axis=Vector(), radius1=1, radius2=0.0, height=1)
-    TORUS = dict(origin=Point(), axis=Vector(), radius1=1, radius2=0.0)
-    SEGMENT = dict(p1=Point(), p2=Vector())
-    CIRCLE = dict(origin=Point(), axis=Vector(), radius1=1)
-    ELLIPSE = dict(origin=Point(), axis=Vector(), radius1=1, radius2=0)
-    VERTEX = dict(origin=Point())
-    ARC_ELIPSE = dict(origin=Point(), axis=Vector(), radius1=1, radius2=0, p1=Point(), p2=Point())
-    ARC_CIRCLE = dict(origin=Point(), axis=Vector(), radius1=1, p1=Point(), p2=Point())
-    LCS = dict(origin=Point(), x=Vector(), y=Vector(), z=Vector())
+class Shape(BasicProperties):
+    def __init__(self, *args, **kwargs):
+        super().__init__(args)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+    def set_basic_properties(self, obj):
+        basic = Geompy.BasicProperties(obj)
+        self.length = basic[0]
+        self.area = basic[1]
+        self.volume = basic[2]
 
-    Template = dict(
-        PLANE=PLANE,
-        CYLINDER=CYLINDER,
-        SPHERE=SPHERE,
-        CONE=CONE,
-        TORUS=TORUS,
-        SEGMENT=SEGMENT,
-        CIRCLE=CIRCLE,
-        ELLIPSE=ELLIPSE,
-        VERTEX=VERTEX,
-        ARC_ELIPSE=ARC_ELIPSE,
-        ARC_CIRCLE=ARC_CIRCLE,
-        LCS=LCS,
-        SPHERE2D=SPHERE,
-        CYLINDER2D = CYLINDER,
-        CONE2D = CONE,
-        DISK_CIRCLE= DISK_CIRCLE,
-        DISK_ELLIPSE = PLANE,
-        TORUS2D = TORUS,
-        POLYGON = PLANE,
-        PLANAR = PLANE,
-        LINE = SEGMENT,
-    )
+class Plane(Shape):
+    def __init__(self, origin, axis, *args):
+        super().__init__(*args, origin=origin, axis=axis)
 
-    @staticmethod
-    def get(obj):
-        # KindOfShape() return a list of , first properties been the kind of shape
-        kos_lst= Geompy.KindOfShape(obj)
-        kind = str(kos_lst[0])
+class Cylinder(Shape):
+    def __init__(self, origin, axis, radius1, height, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1, height=height)
 
-        # get the basic properties from geompy
-        basic = BasicProperties(Geompy.BasicProperties(obj))
+class Sphere(Shape):
+    def __init__(self, origin, radius1, *args):
+        super().__init__(*args, origin=origin, radius1=radius1)
 
-        basic_prop = dict(type=kind)
-        if basic.length > 0:
-            basic_prop['length'] = basic.length
-        if basic.area > 0:
-            basic_prop['area'] = basic.area
-        if basic.volume > 0:
-            basic_prop['volume'] = basic.volume
+class Cone(Shape):
+    def __init__(self, origin, axis, radius1, radius2, height, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1, radius2=radius2, height=height)
 
-        # get the template of properties
-        template= dict()
+class Torus(Shape):
+    def __init__(self, origin, axis, radius1, radius2, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1, radius2=radius2)
 
-        if kind in ShapeProperties.Template.keys():
-            template = ShapeProperties.Template[kind]
-            kos_lst.pop(0)
+class Segment(Shape):
+    def __init__(self, p1, p2, *args):
+        super().__init__(*args, p1=p1, p2=p2)
 
-            for k,v in template.items():
-                if type(v) == Point:
-                    p= Point()
-                    for i in range(3):
-                        val = kos_lst.pop(0)
-                        if i ==0:
-                            p.x = val
-                        elif i ==1:
-                            p.y = val
-                        elif i ==2:
-                            p.z = val
+class Circle(Shape):
+    def __init__(self, origin, axis, radius1, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1)
 
-                    template[k] = p
+class DiskCircle(Shape):
+    def __init__(self, origin, axis, radius1, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1)
 
-                elif type(v) == Vector:
-                    v= Vector()
-                    for i in range(3):
-                        val = kos_lst.pop(0)
-                        if i ==0:
-                            v.vx = val
-                        elif i ==1:
-                            v.vy = val
-                        elif i ==2:
-                            v.vz = val
-                    template[k] = v
+class Ellipse(Shape):
+    def __init__(self, origin, axis, radius1, radius2, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1, radius2=radius2)
 
-                else:
-                    if len(kos_lst)>0:
-                        template[k] = kos_lst.pop(0)
+class Vertex(Shape):
+    def __init__(self, origin, *args):
+        super().__init__(*args, origin=origin)
 
+class ArcEllipse(Shape):
+    def __init__(self, origin, axis, radius1, radius2, p1, p2, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1, radius2=radius2, p1=p1, p2=p2)
 
-        # result properties
-        properties = dict(**basic_prop, **template)
-        
-        return properties
+class ArcCircle(Shape):
+    def __init__(self, origin, axis, radius1, p1, p2, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1, p1=p1, p2=p2)
+
+class LCS(Shape):
+    def __init__(self, origin, x, y, z, *args):
+        super().__init__(*args, origin=origin, x=x, y=y, z=z)
+
+Sphere2D = Sphere
+Cylinder2D = Cylinder
+Cone2D = Cone
+Torus2D = Torus
+Polygon = Plane
+Planar = Plane
+Line = Segment
+DiskEllipse = Plane
+
+type_to_class = {
+    "PLANE": Plane,
+    "CYLINDER": Cylinder,
+    "SPHERE": Sphere,
+    "CONE": Cone,
+    "TORUS": Torus,
+    "SEGMENT": Segment,
+    "CIRCLE": Circle,
+    "ELLIPSE": Ellipse,
+    "VERTEX": Vertex,
+    "ARC_ELIPSE": ArcEllipse,
+    "ARC_CIRCLE": ArcCircle,
+    "LCS": LCS,
+    "SPHERE2D": Sphere2D,
+    "CYLINDER2D": Cylinder2D,
+    "CONE2D": Cone2D,
+    "DISK_CIRCLE": DiskCircle,
+    "DISK_ELLIPSE": DiskEllipse,
+    "TORUS2D": Torus2D,
+    "POLYGON": Polygon,
+    "PLANAR": Planar,
+    "LINE": Line,
+}
+
+def extract_properties(kos_list):
+    kind = str(kos_list.pop(0))
+    
+    if kind in ("PLANE","PLANAR"):
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "kind": kind
+        }
+    elif kind in ("CYLINDER", "CYLINDER2D"):
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "radius1": kos_list[6],
+            "height": kos_list[7],
+            "kind": kind
+        }
+    elif kind in ("SPHERE", "SPHERE2D"):
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "radius1": kos_list[3],
+            "kind": kind
+        }
+    elif kind  in ("CONE", "CONE2D"):
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "radius1": kos_list[6],
+            "radius2": kos_list[7],
+            "height": kos_list[8],
+            "kind": kind
+        }
+    elif kind in ("TORUS", "TORUS2D"):
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "radius1": kos_list[6],
+            "radius2": kos_list[7],
+            "kind": kind
+        }
+    elif kind in ("SEGMENT", "LINE"):
+        return {
+            "p1": Point(*kos_list[0:3]),
+            "p2": Point(*kos_list[3:6]),
+            "kind": kind
+        }
+    elif kind == "CIRCLE":
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "radius1": kos_list[6],
+            "kind": kind
+        }
+    elif kind == "ELLIPSE":
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "radius1": kos_list[6],
+            "radius2": kos_list[7],
+            "kind": kind
+        }
+    elif kind == "VERTEX":
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "kind": kind
+        }
+    elif kind == "ARC_ELIPSE":
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "radius1": kos_list[6],
+            "radius2": kos_list[7],
+            "p1": Point(*kos_list[8:11]),
+            "p2": Point(*kos_list[11:14]),
+            "kind": kind
+        }
+    elif kind == "ARC_CIRCLE":
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "radius1": kos_list[6],
+            "p1": Point(*kos_list[7:10]),
+            "p2": Point(*kos_list[10:13]),
+            "kind": kind
+        }
+    elif kind == "LCS":
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "x": Vector(*kos_list[3:6]),
+            "y": Vector(*kos_list[6:9]),
+            "z": Vector(*kos_list[9:12]),
+            "kind": kind
+        }
+    # Ajoutez d'autres formes si nécessaire
+    else:
+        return None
+    
+def get_properties(obj):
+    kos_lst = Geompy.KindOfShape(obj)
+    print()
+    props = extract_properties(kos_lst)
+    print(props)
+    if not props:
+        return None
+
+    kind = props.pop("kind")
+    shape_class = type_to_class.get(kind)
+
+    if shape_class:
+        shape = shape_class(**props)
+        shape.set_basic_properties(obj)
+        return shape
+    else:
+        return None

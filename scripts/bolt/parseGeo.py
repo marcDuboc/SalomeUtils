@@ -1,4 +1,5 @@
 from typing import Any
+from enum import Enum
 import numpy as np
 from copy import deepcopy
 import GEOM
