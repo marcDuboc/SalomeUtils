@@ -52,21 +52,25 @@ class Nut():
         return f"Nut({self.origin}, {self.axis}, {self.height}, {self.radius}, {self.contact_radius})"
 
 class Thread():
-    def __init__(self) -> None:
-        self.origin = Point
-        self.direction = Vector()
-        self.height = None 
-        self.radius = None
+    """
+     class to store the tread properties
 
-    def __repr__(self) -> str:
-        return f"Tread({self.origin}, {self.direction}, {self.height}, {self.radius})"
-    
-class ThreadedPart():
-    def __init__(self) -> None:
-        self.part_id = None
-        self.treads = list()
+    attributes:
+        part_id: str
+        origin: Point
+        direction: Vector
+        height: float
+        radius: float
+    """
+    def __init__(self,  *args, **kwargs) -> None:
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 class ShapeCoincidence():
+    """
+    Class to check if two shapes are coincident
+    mainly used to check if the axis of a cylinder is coincident with the axis of a screw or nut
+    """
 
     def point_to_line_distance(self, point, line_point, line_dir):
         """
@@ -168,7 +172,22 @@ class ShapeCoincidence():
         else :
             return None, None
 
-class ParseShape():
+class Parse():
+    """
+    a class to parse the shape and extract the screw, nut and tread
+
+    attributes:
+        NUT_RATIO_MINIMUM: float
+        NUT_RATIO_MAXIMUM: float
+        SCREW_RATIO_MINIMUM: float
+        allow_type: list
+    
+    methods:
+        _check_part_kind: helper function to determine if nut or screw
+        is_nut_or_bolt: function to check if the shape is a nut or a screw
+        is_tread: function to check if the shape is a tread
+        parse_obj: function to extract kind of object
+    """
 
     NUT_RATIO_MINIMUM = 0.4
     NUT_RATIO_MAXIMUM = 1.6
@@ -295,7 +314,7 @@ class ParseShape():
         pass
 
     def parse_obj(self,obj_id:str, min_diameter:float=3, max_diameter:float=10):
-        """function to extract the seed point of the bolt and basic parameters of the bolt"""
+        """function to extract kind of object"""
         obj = salome.IDToObject(obj_id)
 
         # check if solid or shell
