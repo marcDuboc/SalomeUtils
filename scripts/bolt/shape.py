@@ -1,6 +1,6 @@
 
 import numpy as np
-from itertools import combinations
+from itertools import combinations,product
 
 import GEOM
 import salome
@@ -96,10 +96,13 @@ class ShapeCoincidence():
         dir1_normalized = np.array(shape1.axis.get_vector()) / np.linalg.norm(shape1.axis.get_vector())
         dir2_normalized = np.array(shape2.axis.get_vector()) / np.linalg.norm(shape2.axis.get_vector())
 
-        # Vérifier la parralélisme des deux vecteurs
+        # Vérifier la parralélisme des deux vecteur dans le deux direction vect et -vect
         dir_diff = np.arccos(np.clip(np.dot(dir1_normalized, dir2_normalized), -1.0, 1.0))
+        dir_diff2 = np.arccos(np.clip(np.dot(dir1_normalized, -dir2_normalized), -1.0, 1.0))
+
         if not (np.isclose(dir_diff, 0, atol=tol_angle) or np.isclose(dir_diff, np.pi, atol=tol_angle)):
             logging.info(f"dir_diff: {dir_diff}")
+            logging.info(f"dir_diff2: {dir_diff2}")
             return False
         
         #verifier la distance entre les deux axes
@@ -227,7 +230,12 @@ class Parse():
 
         if top_r >= cylinder_prop.radius1 and bot_r >= cylinder_prop.radius1:
             if ratio > self.NUT_RATIO_MINIMUM and ratio < self.NUT_RATIO_MAXIMUM and dist >= cylinder_prop.height:
-                return dict(kind="NUT", height=dist, radius=cylinder_prop.radius1, axis=cylinder_prop.axis,origin=top_prop.origin ,contact_radius = max(top_r,bot_r))
+                return dict(kind="NUT", 
+                            height=dist, 
+                            radius=cylinder_prop.radius1, 
+                            axis=cylinder_prop.axis,
+                            origin=top_prop.origin ,
+                            contact_radius = max(top_r,bot_r))
             return None
         
         elif bot_r <= cylinder_prop.radius1 or top_r <= cylinder_prop.radius1:
@@ -235,7 +243,12 @@ class Parse():
                 #set axis as origin from top and bottom surface
                 axis = (top_prop.origin.get_coordinate() - bot_prop.origin.get_coordinate())
                 axis_norm = np.linalg.norm(axis)
-                return dict(kind="SCREW", height=dist,origin=top_prop.origin,radius=cylinder_prop.radius1,axis=axis_norm, contact_radius = max(top_r,bot_r))
+                return dict(kind="SCREW", 
+                            height=dist,
+                            origin=top_prop.origin,
+                            radius=cylinder_prop.radius1,
+                            axis=Vector(axis_norm), 
+                            contact_radius = max(top_r,bot_r))
             return None
            
     def is_nut_or_bolt(self,subshape: list):
@@ -268,7 +281,7 @@ class Parse():
                 if obj is not None:
                     if obj['kind'] == "NUT":
                         nut_properties = {
-                            'part_id': cylinder['obj'].GetStudyEntry(),
+                            'part_id': "",
                             'origin': obj['origin'],
                             'axis': obj['axis'],
                             'height': obj['height'],
@@ -279,7 +292,7 @@ class Parse():
                      
                     elif obj['kind'] == "SCREW":
                         screw_properties = {
-                            'part_id': cylinder['obj'].GetStudyEntry(),
+                            'part_id': "",
                             'origin': obj['origin'],
                             'axis': obj['axis'],
                             'height': obj['height'],
@@ -295,29 +308,40 @@ class Parse():
             return None
 
     def is_tread(self,subshape:list):
-        """function to check if the shape is a tread
-
-        fisrt check => define the candidate:
-        _ a tread is defined by a cylinder, at least one top surface,
-        _ normal of the surface should be coincident to the axis of the cylinder
-        _ the bottom surface area should be smaller than the top surface and his area soule be egal or smaller of the cylinder section
-        
-        post check => valid the candidate agaitn each screw:
-        _ the cylinder should overlap
-        _ the axis of the cylinder should be coincident with the axis of the screw
-        _ the diametter should be close to the screw diametter
-
-        alogrithm:
-        _ if not screr or nut=> store to tread object with salome_id and return
+        """function to check if the shape is a candidate tread
+         return a list of tread
 
         """
-        pass
+        threads=[]
+        cylinders=[]
+        for s in subshape:
+            if type(s['prop']) is Cylinder:
+                cylinders.append(s['prop'])
+        cylinders = list(set(cylinders))
 
-    def parse_obj(self,obj_id:str, min_diameter:float=3, max_diameter:float=10):
+        # create thread object
+        for c in cylinders:
+            ext = c.origin.get_coordinate() + c.axis.get_vector() * c.height
+            end = Point(ext)
+            tread_properties ={
+                                'part_id': "",
+                                'origin': c.origin,
+                                'end': end,
+                                'axis': c.axis,
+                                'height': c.height,
+                                'radius': c.radius1,
+                            }
+            threads.append(Thread(**tread_properties))
+
+        return threads
+
+    def parse_obj(self,obj_id:str, min_diameter:float=3, max_diameter:float=20):
         """function to extract kind of object"""
         obj = salome.IDToObject(obj_id)
 
-        # check if solid or shell
+        if obj is None:
+            return None
+
         if obj.GetShapeType() not in (GEOM.SOLID,GEOM.SHELL):
             return None
         
@@ -332,26 +356,52 @@ class Parse():
             for s in subshapes:
                     p = get_properties(s)
                     if type(p) is Cylinder:
-                        is_candidate = True
-                    if type(p) in self.allow_type:
+                        if (p.radius1*2)>=min_diameter and (p.radius1*2)<=max_diameter:
+                            is_candidate = True
+                            props.append(dict(obj=s, prop=p))
+                    elif type(p) in self.allow_type and type(p) is not Cylinder:
                         props.append(dict(obj=s, prop=p))
 
             if not is_candidate:
                 return None
             
             else:
-                screw_nut = self.is_nut_or_bolt(props)
-                if screw_nut is not None:
-                    return screw_nut
+                # first check with the number of cylinder
+                cyls = [s['prop'] for s in props if type(s['prop']) is Cylinder]
+                cyls = list(set(cyls))
+                
+                if len(cyls) < 3:
+                    screw_nut = self.is_nut_or_bolt(props)
+                    if screw_nut is not None:
+                        id = obj.GetStudyEntry()
+                        screw_nut.part_id = id
+                        return screw_nut
                     
                 else:
                     is_tread = self.is_tread(props)
                     if is_tread is not None:
+                        id = obj.GetStudyEntry()
+                        for t in is_tread:
+                            t.part_id = id
                         return is_tread
                     else:
                         return None
 
-def pair_screw_nut_treads():
+def pair_screw_nut_treads(screw_list, nut_list, treads_list,tol_angle=0.01, tol_dist=0.01):
+    """
+    Pair the screw and nut together
+    """
+    # 3. Pair the screw and nut together using itertools product
+    screw_nut_pairs = list(product(screw_list, nut_list))
+
+    print(len(screw_nut_pairs))
+    
+    # check if the screw and nut are coincident
+    S = ShapeCoincidence()
+    screw_nut_pairs = [p for p in screw_nut_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
+
+    print(f"Number of screw-nut pairs: {len(screw_nut_pairs)}")
+
     pass
 
             

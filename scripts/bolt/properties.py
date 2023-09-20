@@ -69,6 +69,9 @@ class Cylinder(Shape):
 
     def __eq__(self, other):
         return isinstance(other, Cylinder) and self.origin == other.origin and self.axis == other.axis and self.radius1 == other.radius1 and self.height == other.height
+    
+    def __hash__(self):
+        return hash((self.origin, self.axis, self.radius1, self.height))
 
 class Sphere(Shape):
     def __init__(self, origin, radius1, *args):
