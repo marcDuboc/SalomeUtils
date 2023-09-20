@@ -1,5 +1,6 @@
 import numpy as np
 import salome
+import GEOM
 from salome.geom import geomBuilder
 
 Geompy = geomBuilder.New()
@@ -66,6 +67,9 @@ class Cylinder(Shape):
     def __init__(self, origin, axis, radius1, height, *args):
         super().__init__(*args, origin=origin, axis=axis, radius1=radius1, height=height)
 
+    def __eq__(self, other):
+        return isinstance(other, Cylinder) and self.origin == other.origin and self.axis == other.axis and self.radius1 == other.radius1 and self.height == other.height
+
 class Sphere(Shape):
     def __init__(self, origin, radius1, *args):
         super().__init__(*args, origin=origin, radius1=radius1)
@@ -90,6 +94,12 @@ class DiskCircle(Shape):
     def __init__(self, origin, axis, radius1, *args):
         super().__init__(*args, origin=origin, axis=axis, radius1=radius1)
 
+class DiskAnnular(Shape):
+    """ Custom type
+    DiskAnnular is a disk with a hole in the middle"""
+    def __init__(self, origin, axis, radius1, radius2, *args):
+        super().__init__(*args, origin=origin, axis=axis, radius1=radius1, radius2=radius2)
+
 class Ellipse(Shape):
     def __init__(self, origin, axis, radius1, radius2, *args):
         super().__init__(*args, origin=origin, axis=axis, radius1=radius1, radius2=radius2)
@@ -110,6 +120,7 @@ class LCS(Shape):
     def __init__(self, origin, x, y, z, *args):
         super().__init__(*args, origin=origin, x=x, y=y, z=z)
 
+"""Disk=DiskCircle
 Sphere2D = Sphere
 Cylinder2D = Cylinder
 Cone2D = Cone
@@ -117,7 +128,7 @@ Torus2D = Torus
 Polygon = Plane
 Planar = Plane
 Line = Segment
-DiskEllipse = Plane
+DiskEllipse = Plane"""
 
 type_to_class = {
     "PLANE": Plane,
@@ -132,26 +143,94 @@ type_to_class = {
     "ARC_ELIPSE": ArcEllipse,
     "ARC_CIRCLE": ArcCircle,
     "LCS": LCS,
-    "SPHERE2D": Sphere2D,
-    "CYLINDER2D": Cylinder2D,
-    "CONE2D": Cone2D,
+    "SPHERE2D": Sphere,
+    "CYLINDER2D": Cylinder,
+    "CONE2D": Cone,
     "DISK_CIRCLE": DiskCircle,
-    "DISK_ELLIPSE": DiskEllipse,
-    "TORUS2D": Torus2D,
-    "POLYGON": Polygon,
-    "PLANAR": Planar,
-    "LINE": Line,
+    "DISK_ELLIPSE": Plane,
+    "DISK_ANNULAR": DiskAnnular,
+    "TORUS2D": Torus,
+    "POLYGON": Plane,
+    "PLANAR": Plane,
+    "LINE": Segment,
 }
 
-def extract_properties(kos_list):
+def is_DiskCircle_or_DiskAnnular(obj):
+    """
+        Checks if the face is a disk annular.
+        
+        Parameters:
+        - obj: The object to check.
+        - origin_cylinder: The origin of the cylinder (default: None).
+        - axis_cylinder: The axis of the cylinder (default: None).
+        
+        Returns:
+        - Dictionary of properties if the face is disk annular, otherwise None.
+    """
+
+    explode = Geompy.SubShapeAll(obj,GEOM.EDGE)
+    edges = [get_properties(e) for e in explode]
+
+    edges_type = [type(e) for e in edges]
+
+    if any(item in (Circle,ArcCircle) for item in edges_type) == False:
+            return None
+        
+    if any(item == Segment for item in edges_type) == True:
+            return None
+    else:
+        origin_circles = []
+        radius_circles = []
+
+        for e in edges:
+            if type(e) in (Circle,ArcCircle):
+                origin_circles.append(e.origin.get_coordinate())
+                radius_circles.append(e.radius1)
+        
+        #get the means of the origin
+        origin = np.mean(origin_circles,axis=0)
+
+        #vector 
+        vect = edges[0].axis.get_vector()
+
+        #get the max deviation of the origin
+        d = np.max([np.linalg.norm(o-origin) for o in origin_circles])
+
+        # get the radius of the disk
+        radius= [min(radius_circles),max(radius_circles)]
+
+        #check if the deviation is not too big
+        if d > min(radius)/100:
+            return None
+
+        if radius[0]==radius[1]:
+            return {"origin": Point(*origin),
+                    "axis": Vector(*vect),
+                    "radius1": max(radius),
+                    "kind": "DISK_CIRCLE"}
+        
+        else:
+            return {"origin": Point(*origin),
+                    "axis": Vector(*vect),
+                    "radius1": max(radius),
+                    "radius2": min(radius),
+                    "kind": "DISK_ANNULAR"}
+
+def extract_properties(kos_list,obj):
+
     kind = str(kos_list.pop(0))
     
-    if kind in ("PLANE","PLANAR"):
-        return {
-            "origin": Point(*kos_list[0:3]),
-            "axis": Vector(*kos_list[3:6]),
-            "kind": kind
-        }
+    if kind in ("PLANE","PLANAR",'POLYGON'):
+        test= is_DiskCircle_or_DiskAnnular(obj)
+        if test is not None:
+            return test
+        else:
+            return {
+                "origin": Point(*kos_list[0:3]),
+                "axis": Vector(*kos_list[3:6]),
+                "kind": kind
+            }
+        
     elif kind in ("CYLINDER", "CYLINDER2D"):
         return {
             "origin": Point(*kos_list[0:3]),
@@ -160,6 +239,15 @@ def extract_properties(kos_list):
             "height": kos_list[7],
             "kind": kind
         }
+    
+    elif kind in ("DISK", "DISK_CIRCLE"):
+        return {
+            "origin": Point(*kos_list[0:3]),
+            "axis": Vector(*kos_list[3:6]),
+            "radius1": kos_list[6],
+            "kind": kind
+        }
+    
     elif kind in ("SPHERE", "SPHERE2D"):
         return {
             "origin": Point(*kos_list[0:3]),
@@ -236,20 +324,23 @@ def extract_properties(kos_list):
             "z": Vector(*kos_list[9:12]),
             "kind": kind
         }
-    # Ajoutez d'autres formes si nécessaire
+ 
     else:
         return None
     
 def get_properties(obj):
     kos_lst = Geompy.KindOfShape(obj)
-    print()
-    props = extract_properties(kos_lst)
-    print(props)
+    props = extract_properties(kos_lst,obj)
     if not props:
         return None
 
     kind = props.pop("kind")
-    shape_class = type_to_class.get(kind)
+    shape_class = None
+    if kind in type_to_class.keys():
+        shape_class = type_to_class[kind]
+
+    else:
+        print(f"Unknown kind: {kind}")
 
     if shape_class:
         shape = shape_class(**props)
