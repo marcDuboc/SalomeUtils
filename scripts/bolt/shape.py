@@ -98,11 +98,9 @@ class ShapeCoincidence():
 
         # Vérifier la parralélisme des deux vecteur dans le deux direction vect et -vect
         dir_diff = np.arccos(np.clip(np.dot(dir1_normalized, dir2_normalized), -1.0, 1.0))
-        dir_diff2 = np.arccos(np.clip(np.dot(dir1_normalized, -dir2_normalized), -1.0, 1.0))
-
+  
         if not (np.isclose(dir_diff, 0, atol=tol_angle) or np.isclose(dir_diff, np.pi, atol=tol_angle)):
             logging.info(f"dir_diff: {dir_diff}")
-            logging.info(f"dir_diff2: {dir_diff2}")
             return False
         
         #verifier la distance entre les deux axes
@@ -230,10 +228,12 @@ class Parse():
 
         if top_r >= cylinder_prop.radius1 and bot_r >= cylinder_prop.radius1:
             if ratio > self.NUT_RATIO_MINIMUM and ratio < self.NUT_RATIO_MAXIMUM and dist >= cylinder_prop.height:
+                axis = cylinder_prop.axis.get_vector()
+                axis_norm = axis/np.linalg.norm(axis)
                 return dict(kind="NUT", 
                             height=dist, 
                             radius=cylinder_prop.radius1, 
-                            axis=cylinder_prop.axis,
+                            axis=Vector(*axis_norm),
                             origin=top_prop.origin ,
                             contact_radius = max(top_r,bot_r))
             return None
@@ -242,12 +242,12 @@ class Parse():
             if ratio > self.SCREW_RATIO_MINIMUM and dist >= cylinder_prop.height:
                 #set axis as origin from top and bottom surface
                 axis = (top_prop.origin.get_coordinate() - bot_prop.origin.get_coordinate())
-                axis_norm = np.linalg.norm(axis)
+                axis_norm = axis/np.linalg.norm(axis)
                 return dict(kind="SCREW", 
                             height=dist,
                             origin=top_prop.origin,
                             radius=cylinder_prop.radius1,
-                            axis=Vector(axis_norm), 
+                            axis=Vector(*axis_norm), 
                             contact_radius = max(top_r,bot_r))
             return None
            
@@ -398,9 +398,15 @@ def pair_screw_nut_treads(screw_list, nut_list, treads_list,tol_angle=0.01, tol_
     
     # check if the screw and nut are coincident
     S = ShapeCoincidence()
+    logging.info(f"p[0]: {screw_nut_pairs[0][0]}")
+    logging.info(f"p[1]: {screw_nut_pairs[0][1]}")
+
     screw_nut_pairs = [p for p in screw_nut_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
 
     print(f"Number of screw-nut pairs: {len(screw_nut_pairs)}")
+    for p in screw_nut_pairs:
+        logging.info(f"p[0]: {p[0].part_id}")
+        logging.info(f"p[1]: {p[1].part_id}")
 
     pass
 
