@@ -98,8 +98,7 @@ class DiskCircle(Shape):
         super().__init__(*args, origin=origin, axis=axis, radius1=radius1)
 
 class DiskAnnular(Shape):
-    """ Custom type
-    DiskAnnular is a disk with a hole in the middle"""
+    """ Custom type: disk with a hole in the middle"""
     def __init__(self, origin, axis, radius1, radius2, *args):
         super().__init__(*args, origin=origin, axis=axis, radius1=radius1, radius2=radius2)
 
@@ -122,16 +121,6 @@ class ArcCircle(Shape):
 class LCS(Shape):
     def __init__(self, origin, x, y, z, *args):
         super().__init__(*args, origin=origin, x=x, y=y, z=z)
-
-"""Disk=DiskCircle
-Sphere2D = Sphere
-Cylinder2D = Cylinder
-Cone2D = Cone
-Torus2D = Torus
-Polygon = Plane
-Planar = Plane
-Line = Segment
-DiskEllipse = Plane"""
 
 type_to_class = {
     "PLANE": Plane,

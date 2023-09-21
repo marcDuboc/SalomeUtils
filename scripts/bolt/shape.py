@@ -103,10 +103,19 @@ class VirtualBolt():
     def __repr__(self) -> str:
         return f"VirtualBolt({self.id_instance}, {self.start}, {self.end}, {self.radius}, {self.start_radius}, {self.start_height}, {self.end_radius}, {self.end_height})"
     
+    def get_start_name(self):
+        return f"_B{self.id_instance}S"
+    
+    def get_end_name(self): 
+        return f"_B{self.id_instance}E"
+    
+    def get_bolt_name(self):
+        return f"_B{self.id_instance}"
+
     def get_short_name(self):
         return f"_B{self.id_instance}"
     
-    def get_name(self):
+    def get_detail_name(self):
         # return f"_B{self.id}_{self.start_radius}_{self.end_radius}"
         return f"_B{self.id_instance}_{round(self.start_radius,2)}_{round(self.end_radius,2)}_{round(self.start_height)}_{round(self.end_height)}"
     
@@ -376,7 +385,7 @@ class Parse():
                         origins.append(t.origin.get_coordinate())
                         break
 
-        #2. filter the candidate for each group, check the if the sum of the area is egal to np.pi*radius^2
+        #2. filter the candidate for each group, check the if the sum of the area is egal to np.pi*radius^2*height
         threads = []
         for i,group in enumerate(candidate_treads):
             area = 0
@@ -391,7 +400,6 @@ class Parse():
 
         #logging.info(f"number of treads: {len(threads)}")
         return threads
-
 
     def is_tread(self,subshape:list):
         """function to check if the shape is a candidate tread
@@ -477,7 +485,6 @@ class Parse():
                     
                     else:
                         return None
-
 
 def pair_screw_nut_threads(screw_list, nut_list, treads_list,tol_angle=0.01, tol_dist=0.01) -> dict:
     """
@@ -606,8 +613,6 @@ def create_virtual_bolt_from_thread(pair:list):
 
     return VirtualBolt(**bolt_properties)
 
-    
-
 def create_salome_line(compound_id:str,bolt:VirtualBolt):
     """function to create a salome line from a virtual bolt"""
     p0_val = bolt.start.get_coordinate().tolist()
@@ -615,7 +620,7 @@ def create_salome_line(compound_id:str,bolt:VirtualBolt):
     p0 = Geompy.MakeVertex(*p0_val)
     p1 = Geompy.MakeVertex(*p1_val)
     l= Geompy.MakeLineTwoPnt(p0,p1)
-    ld= Geompy.addToStudyInFather(salome.IDToObject(compound_id),l,bolt.get_name())
+    ld= Geompy.addToStudyInFather(salome.IDToObject(compound_id),l,bolt.get_detail_name())
     Gg.setColor(ld,0,255,0)
 
     #create group for line and points
@@ -624,9 +629,9 @@ def create_salome_line(compound_id:str,bolt:VirtualBolt):
     grp_e1 = Geompy.CreateGroup(p1, Geompy.ShapeType["VERTEX"])
 
     #add the line and points to the group
-    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_l,bolt.get_short_name())
-    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e0,bolt.get_short_name()+"S")
-    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e1,bolt.get_short_name()+"E")
+    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_l,bolt.get_bolt_name())
+    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e0,bolt.get_start_name())
+    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e1,bolt.get_end_name())
             
 
 

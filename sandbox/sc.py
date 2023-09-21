@@ -2,7 +2,7 @@ import sys
 import salome
 from salome.kernel.studyedit import getStudyEditor
 from importlib import reload
-sys.path.append('E:\GIT_REPO\SalomeUtils\scripts')
+sys.path.append('E:\GitRepo\SalomeUtils\scripts')
 
 try:
     reload(sys.modules['bolt.properties'])
@@ -15,6 +15,7 @@ Gst = geomtools.GeomStudyTools(StudyEditor)
 
 from bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
 from bolt.properties import get_properties
+from bolt.aster import MakeComm
 
 P = Parse()
 
@@ -67,3 +68,14 @@ for p in parts_to_delete:
     Gst.eraseShapeByEntry(p)
 
 salome.sg.updateObjBrowser()
+
+# write comm file
+Comm = MakeComm()
+data=Comm.process(v_bolts)
+
+print(data)
+
+#with open("E:\GitRepo\SalomeUtils\debug\Bolt.txt","w") as f:
+    #for k,v in data:
+    #    f.write("========="+str(k)+"========\n")
+    #    f.write(v)
