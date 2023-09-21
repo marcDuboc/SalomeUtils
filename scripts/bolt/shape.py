@@ -5,6 +5,7 @@ from itertools import combinations,product
 import GEOM
 import salome
 from salome.geom import geomBuilder
+Gg = salome.ImportComponentGUI("GEOM")
 from contact import logging
 
 # Detect current study
@@ -71,7 +72,7 @@ class VirtualBolt():
     Virtual bolt class to store the virtual bolt properties
 
     attributes:
-        id: int
+        id_instance: int
         start: Point
         end: Point
         radius: float
@@ -80,18 +81,18 @@ class VirtualBolt():
         end_radius: float
         end_height: float
     """
-        # ids management
+    # ids management
     ids_counter = 0
     ids_used=set()
     ids_available=[x for x in range(1,1000)]
 
-    def __init__(self, *args, **kwargs):
-        # get the id
+    def __init__(self,id=None ,*args, **kwargs):
+
         if id in VirtualBolt.ids_available:
-            self.id_instance=id
+            setattr(self,'id_instance',id)
             VirtualBolt.ids_available.remove(self.id_instance)
         else:
-            setattr(self,str(self.id_instance), VirtualBolt.ids_available.pop(0))
+            setattr(self,'id_instance', VirtualBolt.ids_available.pop(0))
 
         VirtualBolt.ids_used.add(self.id_instance)
         VirtualBolt.ids_counter += 1
@@ -103,11 +104,11 @@ class VirtualBolt():
         return f"VirtualBolt({self.id_instance}, {self.start}, {self.end}, {self.radius}, {self.start_radius}, {self.start_height}, {self.end_radius}, {self.end_height})"
     
     def get_short_name(self):
-        return f"_B{self.id_instance}_"
+        return f"_B{self.id_instance}"
     
     def get_name(self):
         # return f"_B{self.id}_{self.start_radius}_{self.end_radius}"
-        return f"_B{self.id_instance}"
+        return f"_B{self.id_instance}_{round(self.start_radius,2)}_{round(self.end_radius,2)}_{round(self.start_height)}_{round(self.end_height)}"
     
     def get_length(self):
         return np.linalg.norm(self.end.get_coordinate() - self.start.get_coordinate())
@@ -146,7 +147,7 @@ class ShapeCoincidence():
         dir_diff = np.arccos(np.clip(np.dot(dir1_normalized, dir2_normalized), -1.0, 1.0))
   
         if not (np.isclose(dir_diff, 0, atol=tol_angle) or np.isclose(dir_diff, np.pi, atol=tol_angle)):
-            logging.info(f"dir_diff: {dir_diff}")
+            #logging.info(f"dir_diff: {dir_diff}")
             return False
         
         #verifier la distance entre les deux axes
@@ -237,8 +238,9 @@ class Parse():
     """
 
     NUT_RATIO_MINIMUM = 0.4
-    NUT_RATIO_MAXIMUM = 1.6
+    NUT_RATIO_MAXIMUM = 2.0
     SCREW_RATIO_MINIMUM = 2.0
+    THREAD_RATIO_MINIMUM = 0.5
 
     allow_type = [Cylinder,DiskCircle,Plane,DiskAnnular]
 
@@ -286,7 +288,6 @@ class Parse():
         
         elif bot_r <= cylinder_prop.radius1 or top_r <= cylinder_prop.radius1:
             if ratio > self.SCREW_RATIO_MINIMUM and dist >= cylinder_prop.height:
-                #set axis as origin from top and bottom surface
                 axis = (top_prop.origin.get_coordinate() - bot_prop.origin.get_coordinate())
                 axis_norm = axis/np.linalg.norm(axis)
                 return dict(kind="SCREW", 
@@ -353,22 +354,63 @@ class Parse():
         else:
             return None
 
+    def _filter_candidate_treads(self,cylinders:list):
+        """function to filter the candidate treads
+        only the full cylinder will be retained
+        """
+        #1. group cylinder by comparing their origin, if similar they are grouped
+        candidate_treads = []
+        origins = []
+        logging.info(f"number of cylinders: {len(cylinders)}")
+        for t in cylinders:
+            if origins == []:
+                candidate_treads.append([t])
+                origins.append(t.origin.get_coordinate())
+            else:
+                for i,origin in enumerate(origins):
+                    if np.isclose(origin, t.origin.get_coordinate(), atol=0.1).all():
+                        candidate_treads[i].append(t)
+                        break
+                    else:
+                        candidate_treads.append([t])
+                        origins.append(t.origin.get_coordinate())
+                        break
+
+        #2. filter the candidate for each group, check the if the sum of the area is egal to np.pi*radius^2
+        threads = []
+        for i,group in enumerate(candidate_treads):
+            area = 0
+            for t in group:
+                area += t.area
+
+            area_calculated = 2*group[0].radius1*np.pi * group[0].height
+            #logging.info(f"radius: {group[0].radius1}\t area_sum: {area} \t area_calc: {area_calculated}")
+
+            if np.isclose(area,area_calculated, atol=0.01):
+                threads.append(group[0])
+
+        #logging.info(f"number of treads: {len(threads)}")
+        return threads
+
+
     def is_tread(self,subshape:list):
         """function to check if the shape is a candidate tread
          return a list of tread
 
         """
         threads=[]
-        cylinders=[]
+        candidate=[]
         for s in subshape:
             if type(s['prop']) is Cylinder:
-                cylinders.append(s['prop'])
-        cylinders = list(set(cylinders))
+                if (s['prop'].height/(s['prop'].radius1*2)) > self.THREAD_RATIO_MINIMUM:
+                    candidate.append(s['prop'])
+
+        filtered = self._filter_candidate_treads(candidate)
 
         # create thread object
-        for c in cylinders:
+        for c in filtered:
             ext = c.origin.get_coordinate() + c.axis.get_vector() * c.height
-            end = Point(ext)
+            end = Point(*ext)
             tread_properties ={
                                 'part_id': "",
                                 'origin': c.origin,
@@ -424,35 +466,167 @@ class Parse():
                         return screw_nut
                     
                 else:
+                    logging.info(f"id: {obj_id}")
                     is_tread = self.is_tread(props)
                     if is_tread is not None:
                         id = obj.GetStudyEntry()
                         for t in is_tread:
                             t.part_id = id
+
                         return is_tread
+                    
                     else:
                         return None
 
-def pair_screw_nut_treads(screw_list, nut_list, treads_list,tol_angle=0.01, tol_dist=0.01):
+
+def pair_screw_nut_threads(screw_list, nut_list, treads_list,tol_angle=0.01, tol_dist=0.01) -> dict:
     """
     Pair the screw and nut together
+
+    attributes:
+        screw_list: list of screw
+        nut_list: list of nut
+        treads_list: list of treads
+        tol_angle: tolerance angle to check if the axis are colinear
+        tol_dist: tolerance distance to check if the axis are colinear
+
+    return:
+        dict(bolts=screw_nut_pairs, treads=screw_thread_pairs)
     """
-    # 3. Pair the screw and nut together using itertools product
+    # 1. Pair the screw and nut together using itertools product
     screw_nut_pairs = list(product(screw_list, nut_list))
 
-    print(len(screw_nut_pairs))
-    
-    # check if the screw and nut are coincident
+    # 2.check if the screw and nut are coincident
     S = ShapeCoincidence()
     screw_nut_pairs = [p for p in screw_nut_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
+    logging.info(f"screw_nut_pairs: {len(screw_nut_pairs)}")
 
-    print(f"Number of screw-nut pairs: {len(screw_nut_pairs)}")
-    for p in screw_nut_pairs:
-        logging.info(f"p[0]: {p[0].part_id}")
-        logging.info(f"p[1]: {p[1].part_id}")
+    # 3.get the screw.part_id used for the nuts
+    screw_part_id_used = [s[0].part_id for s in screw_nut_pairs]
+    screw_remaining = [s for s in screw_list if s.part_id not in screw_part_id_used]
 
-    pass
+    # get the nut.part_id used for the screws
+    screw_thread_pairs = list(product(screw_remaining, treads_list))
+    screw_thread_pairs = [p for p in screw_thread_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
 
+    #remove the pair with the same screw on the screw_tread_pairs
+    logging.info(f"screw_tread_pairs: {len(screw_thread_pairs)}")
+
+    for s in screw_thread_pairs:
+        logging.info(f"id[0]: {s[0].part_id} \t id[1]: {s[1].part_id}")
+
+    return dict(bolts=screw_nut_pairs, threads=screw_thread_pairs)
+
+def create_virtual_bolt(pair:list):
+
+    if type(pair[0])==Nut and type(pair[1])==Screw:
+        nut = pair[0]
+        screw = pair[1]
+
+    elif type(pair[0])==Screw and type(pair[1])==Nut:
+        screw = pair[0]
+        nut = pair[1]
+
+    else:
+        return None
+    
+    #1.get the origin of the screw
+    origin = screw.origin.get_coordinate()
+
+    #2.get the nut extremity points
+    nut_ext = [nut.origin.get_coordinate(),nut.origin.get_coordinate() + nut.axis.get_vector() * nut.height]
+
+    #3.get the closest point from the screw origin
+    nut_ext_dist = [np.linalg.norm(origin - n) for n in nut_ext]
+    nut_ext = nut_ext[np.argmin(nut_ext_dist)]
+    
+    # create the virtual bolt
+    bolt_properties = {
+        'start': Point(*origin),
+        'end': Point(*nut_ext),
+        'radius': screw.radius,
+        'start_radius': screw.contact_radius,
+        'start_height': 1,
+        'end_radius': nut.contact_radius,
+        'end_height': -1,
+    }
+
+    return VirtualBolt(**bolt_properties)
+
+def create_virtual_bolt_from_thread(pair:list):
+    
+    if type(pair[0])==Thread and type(pair[1])==Screw:
+        thread = pair[0]
+        screw = pair[1]
+
+    elif type(pair[0])==Screw and type(pair[1])==Thread:
+        screw = pair[0]
+        thread = pair[1]
+
+    else:
+        return None
+    
+    #1.get the origin of the screw
+    origin = screw.origin.get_coordinate()
+
+    #2.get the thread extremity points
+    thread_ext = [thread.origin.get_coordinate(),thread.end.get_coordinate()]
+
+    #3.get the closest point from the screw origin
+    thread_ext_dist = [np.linalg.norm(origin - n) for n in thread_ext]
+    thread_ext = thread_ext[np.argmin(thread_ext_dist)]
+
+    if np.isclose(origin, thread_ext, atol=0.1).all():
+        return None
+
+    o_dist = np.linalg.norm(origin - thread_ext)
+    screw_remaining = screw.height - o_dist
+    
+    end_height = 0
+
+    if screw_remaining <= 0:
+        return None
+    
+    elif screw_remaining > thread.height:
+        end_height = thread.height
+        
+    else:
+        end_height = screw_remaining
+
+    # create the virtual bolt
+    bolt_properties = {
+        'start': Point(*origin),
+        'end': Point(*thread_ext),
+        'radius': screw.radius,
+        'start_radius': screw.contact_radius,
+        'start_height': 1,
+        'end_radius': thread.radius,
+        'end_height': end_height,
+    }
+
+    return VirtualBolt(**bolt_properties)
+
+    
+
+def create_salome_line(compound_id:str,bolt:VirtualBolt):
+    """function to create a salome line from a virtual bolt"""
+    p0_val = bolt.start.get_coordinate().tolist()
+    p1_val = bolt.end.get_coordinate().tolist()
+    p0 = Geompy.MakeVertex(*p0_val)
+    p1 = Geompy.MakeVertex(*p1_val)
+    l= Geompy.MakeLineTwoPnt(p0,p1)
+    ld= Geompy.addToStudyInFather(salome.IDToObject(compound_id),l,bolt.get_name())
+    Gg.setColor(ld,0,255,0)
+
+    #create group for line and points
+    grp_l = Geompy.CreateGroup(l, Geompy.ShapeType["EDGE"])
+    grp_e0 = Geompy.CreateGroup(p0, Geompy.ShapeType["VERTEX"])
+    grp_e1 = Geompy.CreateGroup(p1, Geompy.ShapeType["VERTEX"])
+
+    #add the line and points to the group
+    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_l,bolt.get_short_name())
+    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e0,bolt.get_short_name()+"S")
+    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e1,bolt.get_short_name()+"E")
             
 
 
