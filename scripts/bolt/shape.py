@@ -66,6 +66,52 @@ class Thread():
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+class VirtualBolt():
+    """
+    Virtual bolt class to store the virtual bolt properties
+
+    attributes:
+        id: int
+        start: Point
+        end: Point
+        radius: float
+        start_radius: float
+        start_height: float
+        end_radius: float
+        end_height: float
+    """
+        # ids management
+    ids_counter = 0
+    ids_used=set()
+    ids_available=[x for x in range(1,1000)]
+
+    def __init__(self, *args, **kwargs):
+        # get the id
+        if id in VirtualBolt.ids_available:
+            self.id_instance=id
+            VirtualBolt.ids_available.remove(self.id_instance)
+        else:
+            setattr(self,str(self.id_instance), VirtualBolt.ids_available.pop(0))
+
+        VirtualBolt.ids_used.add(self.id_instance)
+        VirtualBolt.ids_counter += 1
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __repr__(self) -> str:
+        return f"VirtualBolt({self.id_instance}, {self.start}, {self.end}, {self.radius}, {self.start_radius}, {self.start_height}, {self.end_radius}, {self.end_height})"
+    
+    def get_short_name(self):
+        return f"_B{self.id_instance}_"
+    
+    def get_name(self):
+        # return f"_B{self.id}_{self.start_radius}_{self.end_radius}"
+        return f"_B{self.id_instance}"
+    
+    def get_length(self):
+        return np.linalg.norm(self.end.get_coordinate() - self.start.get_coordinate())
+
 class ShapeCoincidence():
     """
     Class to check if two shapes are coincident
@@ -398,9 +444,6 @@ def pair_screw_nut_treads(screw_list, nut_list, treads_list,tol_angle=0.01, tol_
     
     # check if the screw and nut are coincident
     S = ShapeCoincidence()
-    logging.info(f"p[0]: {screw_nut_pairs[0][0]}")
-    logging.info(f"p[1]: {screw_nut_pairs[0][1]}")
-
     screw_nut_pairs = [p for p in screw_nut_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
 
     print(f"Number of screw-nut pairs: {len(screw_nut_pairs)}")
