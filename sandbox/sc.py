@@ -1,15 +1,17 @@
 import sys
-import salome
-from salome.kernel.studyedit import getStudyEditor
 from importlib import reload
 sys.path.append('E:\GitRepo\SalomeUtils\scripts')
 
 try:
     reload(sys.modules['bolt.properties'])
     reload(sys.modules['bolt.shape'])
+    reload(sys.modules['bolt.aster'])
 except:
     pass
 
+import salome
+from salome.kernel.studyedit import getStudyEditor
+from salome.geom import geomtools
 StudyEditor = getStudyEditor()
 Gst = geomtools.GeomStudyTools(StudyEditor)
 
@@ -62,20 +64,14 @@ for threads in connections['threads']:
 for v_bolt in v_bolts:
     create_salome_line("0:1:1:5",v_bolt)
 
-#delete unwanted parts
-for p in parts_to_delete:
-    Gst.removeFromStudy(p)
-    Gst.eraseShapeByEntry(p)
-
 salome.sg.updateObjBrowser()
 
 # write comm file
 Comm = MakeComm()
 data=Comm.process(v_bolts)
 
-print(data)
-
-#with open("E:\GitRepo\SalomeUtils\debug\Bolt.txt","w") as f:
-    #for k,v in data:
-    #    f.write("========="+str(k)+"========\n")
-    #    f.write(v)
+with open("E:\GitRepo\SalomeUtils\debug\Bolt.txt","w") as f:
+    for k,v in data.items():
+        f.write("#========="+str(k)+"========\n")
+        f.write(v)
+        f.write("\n\n")

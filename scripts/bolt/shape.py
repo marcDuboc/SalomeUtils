@@ -553,9 +553,9 @@ def create_virtual_bolt(pair:list):
         'end': Point(*nut_ext),
         'radius': screw.radius,
         'start_radius': screw.contact_radius,
-        'start_height': 1,
+        'start_height': 1.0,
         'end_radius': nut.contact_radius,
-        'end_height': -1,
+        'end_height': -1.0,
     }
 
     return VirtualBolt(**bolt_properties)
@@ -606,7 +606,7 @@ def create_virtual_bolt_from_thread(pair:list):
         'end': Point(*thread_ext),
         'radius': screw.radius,
         'start_radius': screw.contact_radius,
-        'start_height': 1,
+        'start_height': 1.0,
         'end_radius': thread.radius,
         'end_height': end_height,
     }
