@@ -67,8 +67,7 @@ class GroupItem():
 
     def get_parent(self):
         return salome.IDToObject(self.shape_sid)
-
-        
+  
 class ContactPair():
     """
     Class for contact pair

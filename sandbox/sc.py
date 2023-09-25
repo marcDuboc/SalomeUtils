@@ -25,7 +25,7 @@ nuts = []
 screws = []
 threads = []
 
-for id in [f"0:1:1:5:{i}" for i in range(2,38)]:
+for id in [f"0:1:1:5:{i}" for i in range(2,47)]:
     o = P.parse_obj(id)
 
     if type(o) == Nut:
@@ -60,11 +60,18 @@ for threads in connections['threads']:
         for p in threads:
             if type(p) == Screw:
                     parts_to_delete.append(p.part_id)
+
 # build geom in salome
 for v_bolt in v_bolts:
     create_salome_line("0:1:1:5",v_bolt)
 
 salome.sg.updateObjBrowser()
+
+# delete parts
+for grp in parts_to_delete:
+    Gst.removeFromStudy(grp)
+    Gst.eraseShapeByEntry(grp)
+
 
 # write comm file
 Comm = MakeComm()
