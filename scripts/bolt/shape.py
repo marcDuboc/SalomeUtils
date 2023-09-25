@@ -154,13 +154,15 @@ class ShapeCoincidence():
 
         # Vérifier la parralélisme des deux vecteur dans le deux direction vect et -vect
         dir_diff = np.arccos(np.clip(np.dot(dir1_normalized, dir2_normalized), -1.0, 1.0))
-  
         if not (np.isclose(dir_diff, 0, atol=tol_angle) or np.isclose(dir_diff, np.pi, atol=tol_angle)):
             #logging.info(f"dir_diff: {dir_diff}")
             return False
         
         #verifier la distance entre les deux axes
-        if self.point_to_line_distance(shape1.origin.get_coordinate(), shape2.origin.get_coordinate(), dir1_normalized) > tol_dist:
+        dist1 = self.point_to_line_distance(shape1.origin.get_coordinate(), shape2.origin.get_coordinate(), dir1_normalized)
+        dist2 = self.point_to_line_distance(shape2.origin.get_coordinate(), shape1.origin.get_coordinate(), dir2_normalized)
+        if dist1 > tol_dist or dist2 > tol_dist:
+            #logging.info(f"dist1: {dist1} \t dist2: {dist2}")
             return False
 
         return True
@@ -370,7 +372,6 @@ class Parse():
         #1. group cylinder by comparing their origin, if similar they are grouped
         candidate_treads = []
         origins = []
-        logging.info(f"number of cylinders: {len(cylinders)}")
         for t in cylinders:
             if origins == []:
                 candidate_treads.append([t])
@@ -393,12 +394,10 @@ class Parse():
                 area += t.area
 
             area_calculated = 2*group[0].radius1*np.pi * group[0].height
-            #logging.info(f"radius: {group[0].radius1}\t area_sum: {area} \t area_calc: {area_calculated}")
 
             if np.isclose(area,area_calculated, atol=0.01):
                 threads.append(group[0])
 
-        #logging.info(f"number of treads: {len(threads)}")
         return threads
 
     def is_tread(self,subshape:list):
@@ -474,7 +473,6 @@ class Parse():
                         return screw_nut
                     
                 else:
-                    logging.info(f"id: {obj_id}")
                     is_tread = self.is_tread(props)
                     if is_tread is not None:
                         id = obj.GetStudyEntry()
@@ -500,27 +498,26 @@ def pair_screw_nut_threads(screw_list, nut_list, treads_list,tol_angle=0.01, tol
     return:
         dict(bolts=screw_nut_pairs, treads=screw_thread_pairs)
     """
+
     # 1. Pair the screw and nut together using itertools product
     screw_nut_pairs = list(product(screw_list, nut_list))
 
     # 2.check if the screw and nut are coincident
     S = ShapeCoincidence()
     screw_nut_pairs = [p for p in screw_nut_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
-    logging.info(f"screw_nut_pairs: {len(screw_nut_pairs)}")
 
-    # 3.get the screw.part_id used for the nuts
+    # 3. check the distance between the screw and nut, if longer than the screw height, remove the pair
+    screw_nut_pairs = [p for p in screw_nut_pairs if np.linalg.norm(p[0].origin.get_coordinate() - p[1].origin.get_coordinate()) <= p[0].height]
+
+    # 4.get the screw.part_id used for the nuts
     screw_part_id_used = [s[0].part_id for s in screw_nut_pairs]
     screw_remaining = [s for s in screw_list if s.part_id not in screw_part_id_used]
 
-    # get the nut.part_id used for the screws
+    # 5.get the nut.part_id used for the screws
     screw_thread_pairs = list(product(screw_remaining, treads_list))
     screw_thread_pairs = [p for p in screw_thread_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
 
-    #remove the pair with the same screw on the screw_tread_pairs
-    logging.info(f"screw_tread_pairs: {len(screw_thread_pairs)}")
-
-    for s in screw_thread_pairs:
-        logging.info(f"id[0]: {s[0].part_id} \t id[1]: {s[1].part_id}")
+    # TODO 6.remove the pair with the same screw on the screw_tread_pairs
 
     return dict(bolts=screw_nut_pairs, threads=screw_thread_pairs)
 

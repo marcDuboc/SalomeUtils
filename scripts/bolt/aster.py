@@ -6,9 +6,6 @@ class MakeComm:
 
     @staticmethod
     def _listNameToStrTuple(names) -> str:
-        logging.debug("names: {}".format(names))
-        logging.debug("type(names): {}".format(type(names)))
-
         str_names =chr(40)
         if type(names) is str:
             str_names += "'{}',".format(names)

@@ -1,6 +1,6 @@
 import sys
 from importlib import reload
-sys.path.append('E:\GitRepo\SalomeUtils\scripts')
+sys.path.append('E:\GIT_REPO\SalomeUtils\scripts')
 
 try:
     reload(sys.modules['bolt.properties'])
@@ -25,7 +25,7 @@ nuts = []
 screws = []
 threads = []
 
-for id in [f"0:1:1:5:{i}" for i in range(2,47)]:
+for id in [f"0:1:1:5:{i}" for i in range(2,51)]:
     o = P.parse_obj(id)
 
     if type(o) == Nut:
@@ -38,7 +38,7 @@ for id in [f"0:1:1:5:{i}" for i in range(2,47)]:
             if type(e) == Thread:
                 threads.append(e)
                 
-connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=0.01, tol_dist=0.01)
+connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=0.01, tol_dist=0.05)
 
 # create virtual bolts
 v_bolts = []
@@ -68,16 +68,18 @@ for v_bolt in v_bolts:
 salome.sg.updateObjBrowser()
 
 # delete parts
-for grp in parts_to_delete:
-    Gst.removeFromStudy(grp)
-    Gst.eraseShapeByEntry(grp)
+delete=True
+if delete:
+    for grp in parts_to_delete:
+        Gst.removeFromStudy(grp)
+        Gst.eraseShapeByEntry(grp)
 
 
 # write comm file
 Comm = MakeComm()
 data=Comm.process(v_bolts)
 
-with open("E:\GitRepo\SalomeUtils\debug\Bolt.txt","w") as f:
+with open("E:\GIT_REPO\SalomeUtils\debug\Bolt.txt","w") as f:
     for k,v in data.items():
         f.write("#========="+str(k)+"========\n")
         f.write(v)
