@@ -610,27 +610,38 @@ def create_virtual_bolt_from_thread(pair:list):
 
     return VirtualBolt(**bolt_properties)
 
-def create_salome_line(compound_id:str,bolt:VirtualBolt):
+def create_salome_line(bolt:VirtualBolt) -> str:
     """function to create a salome line from a virtual bolt"""
     p0_val = bolt.start.get_coordinate().tolist()
     p1_val = bolt.end.get_coordinate().tolist()
     p0 = Geompy.MakeVertex(*p0_val)
     p1 = Geompy.MakeVertex(*p1_val)
     l= Geompy.MakeLineTwoPnt(p0,p1)
-    ld= Geompy.addToStudyInFather(salome.IDToObject(compound_id),l,bolt.get_detail_name())
+    ld= Geompy.addToStudy(l,bolt.get_detail_name())
     Gg.setColor(ld,0,255,0)
 
     #create group for line and points
     grp_l = Geompy.CreateGroup(l, Geompy.ShapeType["EDGE"])
-    grp_e0 = Geompy.CreateGroup(p0, Geompy.ShapeType["VERTEX"])
-    grp_e1 = Geompy.CreateGroup(p1, Geompy.ShapeType["VERTEX"])
+    grp_e0 = Geompy.CreateGroup(l, Geompy.ShapeType["VERTEX"])
+    grp_e1 = Geompy.CreateGroup(l, Geompy.ShapeType["VERTEX"])
+
+    # get the vertex of the line
+    li = Geompy.SubShapeAll(l,Geompy.ShapeType["EDGE"])
+    lid = Geompy.GetSubShapeID(l,li[0])
+    Geompy.AddObject(grp_l,lid)
+
+    vi = Geompy.SubShapeAll(l,Geompy.ShapeType["VERTEX"])
+    vid = [Geompy.GetSubShapeID(l,v) for v in vi]
+    Geompy.AddObject(grp_e0,vid[0])
+    Geompy.AddObject(grp_e1,vid[1])
 
     #add the line and points to the group
     Geompy.addToStudyInFather(salome.IDToObject(ld),grp_l,bolt.get_bolt_name())
     Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e0,bolt.get_start_name())
     Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e1,bolt.get_end_name())
-            
-
+    
+    print(ld)
+    return l
 
 
 

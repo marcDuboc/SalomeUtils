@@ -1,6 +1,6 @@
 import sys
 from importlib import reload
-sys.path.append('E:\GIT_REPO\SalomeUtils\scripts')
+sys.path.append('E:\GitRepo\SalomeUtils\scripts')
 
 try:
     reload(sys.modules['bolt.properties'])
@@ -11,9 +11,10 @@ except:
 
 import salome
 from salome.kernel.studyedit import getStudyEditor
-from salome.geom import geomtools
+from salome.geom import geomtools, geomBuilder
 StudyEditor = getStudyEditor()
 Gst = geomtools.GeomStudyTools(StudyEditor)
+Geompy = geomBuilder.New()
 
 from bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
 from bolt.properties import get_properties
@@ -62,9 +63,14 @@ for threads in connections['threads']:
                     parts_to_delete.append(p.part_id)
 
 # build geom in salome
+lines_ids = []
 for v_bolt in v_bolts:
-    create_salome_line("0:1:1:5",v_bolt)
+    lines_ids.append(create_salome_line(v_bolt))
 
+vbf= Geompy.NewFolder('Virtual Bolts')
+Geompy.PutListToFolder(lines_ids, vbf)
+
+# refresh viewer
 salome.sg.updateObjBrowser()
 
 # delete parts
@@ -79,7 +85,7 @@ if delete:
 Comm = MakeComm()
 data=Comm.process(v_bolts)
 
-with open("E:\GIT_REPO\SalomeUtils\debug\Bolt.txt","w") as f:
+with open("E:\GitRepo\SalomeUtils\debug\Bolt.txt","w") as f:
     for k,v in data.items():
         f.write("#========="+str(k)+"========\n")
         f.write(v)
