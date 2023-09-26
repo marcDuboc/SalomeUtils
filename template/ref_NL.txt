@@ -306,7 +306,8 @@ INSTLIST=DEFI_LIST_INST(
             ),
         ),
     METHODE='AUTO',
-    );
+    )
+
 
 # Physical contact model and contact zones defintion
 CON=DEFI_CONTACT(
@@ -327,7 +328,7 @@ CON=DEFI_CONTACT(
         GROUP_MA_MAIT='master_0',
         SANS_GROUP_NO=('master_0'),
         ),
-    );
+    )
 
 # Nonlinear static analysis definition
 SIM=STAT_NON_LINE(
@@ -396,10 +397,10 @@ SIM=STAT_NON_LINE(
         NPREC=-1,
         STOP_SINGULIER='NON',
         ),
-    );
+    )
 # Input file end
 FIN(
     INFO_RESU='NON',
     RETASSAGE='NON',
-    );
+    )
 
