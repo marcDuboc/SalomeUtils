@@ -1,6 +1,6 @@
 import sys
 from importlib import reload
-sys.path.append('E:\GitRepo\SalomeUtils\scripts')
+sys.path.append('E:\GIT_REPO\SalomeUtils\scripts')
 
 try:
     reload(sys.modules['bolt.properties'])
@@ -39,7 +39,7 @@ for id in [f"0:1:1:5:{i}" for i in range(2,51)]:
             if type(e) == Thread:
                 threads.append(e)
                 
-connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=0.01, tol_dist=0.05)
+connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=0.01, tol_dist=0.1)
 
 # create virtual bolts
 v_bolts = []
@@ -85,7 +85,7 @@ if delete:
 Comm = MakeComm()
 data=Comm.process(v_bolts)
 
-with open("E:\GitRepo\SalomeUtils\debug\Bolt.txt","w") as f:
+with open("E:\GIT_REPO\SalomeUtils\debug\Bolt.txt","w") as f:
     for k,v in data.items():
         f.write("#========="+str(k)+"========\n")
         f.write(v)
