@@ -31,6 +31,8 @@ class ObjectType():
     COMPOUND = 27
     SUBSHAPE= 28
     GROUP = 37
+    SEGMENT = 5
+    VERTEX = 2
 
 class TreeItem():
     def __init__(self,id:tuple,name:str,type=int):
@@ -109,39 +111,7 @@ class Tree:
                 parts.append(obj)
         return parts
     
-    def get_bolts(self):
-        """
-        return a dict of contact objects such as {name:{master:obj, slave:obj}}}
-        master and slave are defined by the suffix M|S
-        """
-        pattern = self.contact_pattern
-        
-        # select contact objects
-        contacts = list()
-        for obj in self.objects:
-            if re.match(pattern,obj.name) and obj.type == ObjectType.GROUP:
-                contacts.append(obj)
 
-        # regroup contacts by name (without the suffix M|S)
-        contacts_by_name = dict()
-        for contact in contacts:
-            name = contact.name[:-1]
-            if name not in contacts_by_name:
-                contacts_by_name[name] = dict(master=None,slave=None)
-            if contact.name[-1] == 'M':
-                contacts_by_name[name]['master'] = tuple_to_id(contact.id)
-            elif contact.name[-1] == 'S':
-                contacts_by_name[name]['slave'] = tuple_to_id(contact.id)
-
-        # sort the dict by id = int(name[3:])
-        #add the pair_id to the dict
-        for name in contacts_by_name:
-            contacts_by_name[name]['pair_id'] = int(name[3:])
-
-        contacts_by_name = dict(sorted(contacts_by_name.items(), key=lambda item: int(item[0][3:])))
-        
-        return contacts_by_name
-        
     def get_by_type(self,type:int):
         """
         return a list of objects of type

@@ -6,13 +6,12 @@ import GEOM
 import salome
 from salome.geom import geomBuilder
 Gg = salome.ImportComponentGUI("GEOM")
-from contact import logging
 
 # Detect current study
 Geompy = geomBuilder.New()
 salome.salome_init()
 
-from bolt.properties import get_properties, Point, Vector, Cylinder, Plane, DiskCircle, DiskAnnular
+from common.properties import get_properties, Point, Vector, Cylinder, Plane, DiskCircle, DiskAnnular
 
 class Screw():
     """
@@ -116,8 +115,7 @@ class VirtualBolt():
         return f"_B{self.id_instance}"
     
     def get_detail_name(self):
-        # return f"_B{self.id}_{self.start_radius}_{self.end_radius}"
-        return f"_B{self.id_instance}_{round(self.start_radius,2)}_{round(self.end_radius,2)}_{round(self.start_height)}_{round(self.end_height)}"
+        return f"_B{self.id_instance}_{round(self.radius,2)}_{round(self.start_radius,2)}_{round(self.end_radius,2)}_{round(self.start_height)}_{round(self.end_height)}"
     
     def get_length(self):
         return np.linalg.norm(self.end.get_coordinate() - self.start.get_coordinate())
@@ -640,7 +638,6 @@ def create_salome_line(bolt:VirtualBolt) -> str:
     Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e0,bolt.get_start_name())
     Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e1,bolt.get_end_name())
     
-    print(ld)
     return l
 
 

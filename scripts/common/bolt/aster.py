@@ -1,6 +1,6 @@
-from bolt.shape import VirtualBolt
-from bolt.properties import Point, Vector
-from contact import logging
+from .shape import VirtualBolt
+from common.properties import Point, Vector
+from common import logging
 
 class MakeComm:
 

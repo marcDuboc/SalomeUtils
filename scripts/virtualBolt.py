@@ -21,28 +21,37 @@ from PyQt5.QtWidgets import QDockWidget
 #for debbuging
 from importlib import reload
 
-# add contact module
 try:
-    reload(sys.modules['bolt.shape', 'bolt.aster', 'bolt.properties'])
-    from bolt.cgui.mainwin import Bolt1DGUI
-    from bolt.tree import Tree
-    from bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
-    from bolt.properties import get_properties
-    from bolt.aster import MakeComm
+    modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster']
+    for m in modules:
+        if m in sys.modules:
+            reload(sys.modules[m])
+
+    #from common.bolt.cgui.mainwin import Bolt1DGUI
+    from common.bolt.treeBolt import TreeBolt
+    from common.bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
+    from common.properties import get_properties
+    from common.bolt.aster import MakeComm
+    from common import logging
     
 except:
     script_directory = os.path.dirname(
         os.path.abspath(inspect.getfile(inspect.currentframe())))
     sys.path.append(script_directory)
-    from bolt.cgui.mainwin import Bolt1DGUI
-    from bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
-    from bolt.properties import get_properties
-    from bolt.aster import MakeComm
 
+    from common.bolt.treeBolt import TreeBolt
+    from common.bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
+    from common.properties import get_properties
+    from common.bolt.aster import MakeComm
+    from common import logging
 
 StudyEditor = getStudyEditor()
 Gst = geomtools.GeomStudyTools(StudyEditor)
 Geompy = geomBuilder.New()
+
+T= TreeBolt()
+bolt = T.parse_for_bolt()
+logging.info(bolt)
 
 class BoltTo1D(QObject):
     pattern_bolt = re.compile(r'_B\d{1,3}(_-?\d+(\.\d+)?)+')
@@ -63,19 +72,32 @@ class BoltTo1D(QObject):
     def __init__(self):
         super(BoltTo1D, self).__init__()
         self.Gui = Bolt1DGUI()
-        self.Tree = Tree()
+        self.Tree = TreeBolt()
         self.Parse= Parse()
+        self.roots ="0:1:1"
 
         self.parts =[]
         self.compound_parts = []
         self.manual_selection = dict(source=None, target=None)
+        self.bolts = None
 
     def __del__(self):
         del self.Tree
         del self.Parse
         del self.Gui
 
-    # Slot ====================================================================          
+    
+    #on opening parse tree and update table
+    def on_open(self):
+        self.bolts = self.Tree.parse_for_bolt()
+
+        self.Gui.set_data(self.Contact.to_table_model())
+        self.Tree.parse_tree_objects()
+    
+    # Slot ==================================================================== 
+    # 
+    # 
+             
     @pyqtSlot()
     def select_compound(self):
         selCount = salome.sg.SelectedCount()
