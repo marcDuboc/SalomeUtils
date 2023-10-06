@@ -79,6 +79,7 @@ class VirtualBolt():
         start_height: float
         end_radius: float
         end_height: float
+        preload: float
     """
     # ids management
     ids_counter = 0
@@ -96,8 +97,13 @@ class VirtualBolt():
         VirtualBolt.ids_used.add(self.id_instance)
         VirtualBolt.ids_counter += 1
 
+        # add preload
+        setattr(self,'preload', 0.0)
+
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+
 
     def __repr__(self) -> str:
         return f"VirtualBolt({self.id_instance}, {self.start}, {self.end}, {self.radius}, {self.start_radius}, {self.start_height}, {self.end_radius}, {self.end_height})"

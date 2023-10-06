@@ -59,6 +59,7 @@ class TreeBolt(Tree):
                                         'start_height': float(data[3]),
                                         'end_radius': float(data[4]),
                                         'end_height': float(data[5]),
+                                        'preload': float(data[6]),
                                     }
                     bolts.append(VirtualBolt(id=id, **bolt_properties))
 

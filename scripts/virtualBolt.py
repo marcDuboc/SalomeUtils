@@ -22,12 +22,12 @@ from PyQt5.QtWidgets import QDockWidget
 from importlib import reload
 
 try:
-    modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster']
+    modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster','common.bolt.bgui.mainwin']
     for m in modules:
         if m in sys.modules:
             reload(sys.modules[m])
 
-    #from common.bolt.cgui.mainwin import Bolt1DGUI
+    from common.bolt.bgui.mainwin import BoltGUI
     from common.bolt.treeBolt import TreeBolt
     from common.bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
     from common.properties import get_properties
@@ -39,6 +39,7 @@ except:
         os.path.abspath(inspect.getfile(inspect.currentframe())))
     sys.path.append(script_directory)
 
+    from common.bolt.bgui.mainwin import BoltGUI
     from common.bolt.treeBolt import TreeBolt
     from common.bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
     from common.properties import get_properties
@@ -49,11 +50,7 @@ StudyEditor = getStudyEditor()
 Gst = geomtools.GeomStudyTools(StudyEditor)
 Geompy = geomBuilder.New()
 
-T= TreeBolt()
-bolt = T.parse_for_bolt()
-logging.info(bolt)
-
-class BoltTo1D(QObject):
+class Bolt1D(QObject):
     pattern_bolt = re.compile(r'_B\d{1,3}(_-?\d+(\.\d+)?)+')
 
     compound_selected = pyqtSignal(str,str)
@@ -70,8 +67,8 @@ class BoltTo1D(QObject):
     manual_bolt_validated = pyqtSignal(bool)
 
     def __init__(self):
-        super(BoltTo1D, self).__init__()
-        self.Gui = Bolt1DGUI()
+        super(Bolt1D, self).__init__()
+        self.Gui = BoltGUI()
         self.Tree = TreeBolt()
         self.Parse= Parse()
         self.roots ="0:1:1"
@@ -79,27 +76,36 @@ class BoltTo1D(QObject):
         self.parts =[]
         self.compound_parts = []
         self.manual_selection = dict(source=None, target=None)
-        self.bolts = None
+
+        # get the existing virtual bolts
+        self.bolts = self.Tree.parse_for_bolt()
+        if self.bolts:
+            b_list = self.virtual_bolt_to_table()
+            self.Gui.set_data(b_list)
 
     def __del__(self):
         del self.Tree
         del self.Parse
         del self.Gui
-
-    
-    #on opening parse tree and update table
-    def on_open(self):
-        self.bolts = self.Tree.parse_for_bolt()
-
-        self.Gui.set_data(self.Contact.to_table_model())
-        self.Tree.parse_tree_objects()
     
     # Slot ==================================================================== 
-    # 
-    # 
+    
+    def virtual_bolt_to_table(self):
+        bolt_array= []
+        for b in self.bolts:
+            logging.info(b)
+            bolt_array.append([b.id_instance,
+                               b.radius,
+                               b.start_radius,
+                               b.end_radius,
+                               b.start_height,
+                               b.end_height,
+                               b.preload])
+
+        return bolt_array
              
     @pyqtSlot()
-    def select_compound(self):
+    def select(self):
         selCount = salome.sg.SelectedCount()
         if selCount == 0:
             self.compound_selected.emit("No compound selected!","red")
@@ -139,12 +145,28 @@ class BoltTo1D(QObject):
                 self.Gui.set_data(self.Contact.to_table_model())
 
     @pyqtSlot()
-    def parse_all(self):
-        pass
-
-    @pyqtSlot()
     def parse_selected(self):
         pass
 
-    def find_existing_bolt(self):
-        pass
+class MyDockWidget(QDockWidget):
+    widgetClosed = pyqtSignal()
+
+    def closeEvent(self, event):
+        self.widgetClosed.emit()
+        super(MyDockWidget, self).closeEvent(event)
+
+bolt_instance = Bolt1D()
+
+def delete_bolt_instance():
+    global bolt_instance
+    del bolt_instance
+
+d = MyDockWidget()
+d.setWidget(bolt_instance.Gui)
+d.setAttribute(Qt.WA_DeleteOnClose)
+d.setWindowFlags(d.windowFlags() | Qt.WindowStaysOnTopHint)
+d.setWindowTitle("Bolt 1D")
+d.setGeometry(600, 300, 400, 600)
+d.widgetClosed.connect(delete_bolt_instance)
+
+d.show()

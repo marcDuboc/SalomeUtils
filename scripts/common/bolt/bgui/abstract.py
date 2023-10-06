@@ -8,8 +8,8 @@ import os
 from PyQt5.QtWidgets import QComboBox, QItemDelegate,QStyle
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal, QEvent
-from contact.cgui import IMG_PATH
-from contact import logging
+from common import IMG_PATH
+from common import logging
 
 class TypeDelegate(QItemDelegate):
     changeType = pyqtSignal(int,str) 
@@ -126,7 +126,7 @@ class TableModel(QAbstractTableModel):
     def __init__(self, data, header=None):
         super().__init__()
         self._data = data
-        self.header=['ID','Name','Type','Master','Slave','Display','Swap','Delete']
+        self.header=['ID','R(mm)','Rs(mm)','Re(mm)','Ss(mm)','Se(mm)','Fp(kN)','Delete']
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)
@@ -157,7 +157,7 @@ class TableModel(QAbstractTableModel):
         
     def flags(self, index):
         default_flags = super(TableModel, self).flags(index)
-        if index.column() in (0,1,3,4,5,6,7):  
+        if index.column() in (0,7):  
             return default_flags & ~Qt.ItemIsEditable
         return default_flags | Qt.ItemIsEditable
 
