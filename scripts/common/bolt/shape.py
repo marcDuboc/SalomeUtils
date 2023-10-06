@@ -12,6 +12,7 @@ Geompy = geomBuilder.New()
 salome.salome_init()
 
 from common.properties import get_properties, Point, Vector, Cylinder, Plane, DiskCircle, DiskAnnular
+from common import logging
 
 class Screw():
     """

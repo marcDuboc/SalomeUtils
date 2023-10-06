@@ -23,19 +23,59 @@ def tuple_to_id(tuple):
 
 class ObjectType():
     """reference 
-    https://docs.salome-platform.org/7/gui/GEOM/geometrical_obj_prop_page.html"""
+    https://docs.salome-platform.org/latest/gui/GEOM/geometrical_obj_prop_page.html"""
 
-    SOLID = 26
-    FACE = 24
-    SHELL = 25
-    COMPOUND = 27
+    COPY= 0
+    IMPORT= 1
+    POINT= 2
+    VECTOR= 3
+    PLANE= 4
+    LINE= 5
+    TORUS= 6
+    BOX= 7
+    CYLINDER= 8
+    CONE= 9
+    SPHERE= 10
+    PRISM= 11
+    REVOLUTION= 12
+    BOOLEAN= 13
+    PARTITION= 14
+    POLYLINE= 15
+    CIRCLE= 16
+    SPLINE= 17
+    ELLIPSE= 18
+    CIRC_ARC= 19
+    FILLET= 20
+    CHAMFER= 21
+    EDGE= 22
+    WIRE= 23
+    FACE= 24
+    SHELL= 25
+    SOLID= 26
+    COMPOUND= 27
     SUBSHAPE= 28
-    GROUP = 37
-    SEGMENT = 5
-    VERTEX = 2
+    PIPE= 29
+    ARCHIMEDE= 30
+    FILLING= 31
+    EXPLODE= 32
+    GLUED= 33
+    SKETCHER= 34
+    CDG= 35
+    FREE_BOUNDS= 36
+    GROUP= 37
+    BLOCK= 38
+    MARKER= 39
+    THRUSECTIONS= 40
+    COMPOUNDFILTER= 41
+    SHAPES_ON_SHAPE= 42
+    ELLIPSE_ARC= 43
+    SKETCHER= 44
+    FILLET_2D= 45
+    FILLET_1D= 46
+    PIPETSHAPE= 201
 
 class TreeItem():
-    def __init__(self,id:tuple,name:str,type=int):
+    def __init__(self,id:tuple,name:str,type):
         self.id = id
         self.name = name
         self.type = type
@@ -62,7 +102,7 @@ class Tree:
         """
         obj=salome.IDToObject(obj_sid)
         try:
-            obj_type = obj.GetType()
+            obj_type = obj.GetShapeType()
             return True,obj_type
 
         except:
@@ -101,7 +141,7 @@ class Tree:
         self.objects = objects
         return objects
     
-    def get_parts(self,type=[ObjectType.SOLID,ObjectType.SUBSHAPE]):
+    def get_parts(self,type=[GEOM.SOLID,GEOM.SHELL]):
         """
         return a list of parts
         """

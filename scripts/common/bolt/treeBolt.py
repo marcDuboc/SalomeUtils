@@ -44,9 +44,10 @@ class TreeBolt(Tree):
                 name = obj.name
                 sid = obj.get_sid()
 
-                isValid, otype = self._check_type(sid)
-
-                if isValid and otype == ObjectType.SEGMENT:
+                isValid, gtype = self._check_type(sid)
+                logging.debug(f"parse_for_bolt: {isValid} {name} {sid} {gtype} {type(GEOM.EDGE)}")
+                if isValid and gtype == GEOM.EDGE:
+                    logging.debug(f"create_bolt: {name} {sid}")
                     prop = get_properties(salome.IDToObject(sid))
                     data= name.split('_')
                     data= data[1:]
@@ -62,6 +63,7 @@ class TreeBolt(Tree):
                                         'preload': float(data[6]),
                                     }
                     bolts.append(VirtualBolt(id=id, **bolt_properties))
+
 
         return bolts
                     

@@ -23,7 +23,9 @@ gg = salome.ImportComponentGUI("GEOM")
 class BoltGUI(QWidget):
 
     # define custom signals
-    load_compound = pyqtSignal()
+    select = pyqtSignal()
+    parse = pyqtSignal()
+
     closing = pyqtSignal()
     export_contact = pyqtSignal(str,str,bool)
 
@@ -160,37 +162,25 @@ class BoltGUI(QWidget):
         self.setLayout(layout)
 
         # connect signals
-        btnQuit.clicked.connect(self.close)
+        self.bt_input.clicked.connect(self.select.emit)
+        self.bt_search.clicked.connect(self.parse.emit)
+
         self.bt_export.clicked.connect(self.select_file)
         self.cb_export_json.stateChanged.connect(self.on_change_export_json)
         self.gp_export_comm.toggled.connect(self.on_change_export_comm)
+        btnQuit.clicked.connect(self.close)
+
         
     # slots
-    #@pyqtSlot(str,str)
-    #def on_compound_selected(self, master_compound_name,color='black'):
-    #    self.lb_root.setText(master_compound_name)
-    #    self.lb_root.setStyleSheet(f"color: {color};")
+    @pyqtSlot(str,str)
+    def on_selection(self, master_compound_name, color='black'):
+        self.le_input.setText(master_compound_name)
+        self.le_input.setStyleSheet(f"color: {color};")
 
-    #@pyqtSlot(list)
-    #def set_compounds_parts(self, parts):
-        #self.compound_parts = parts 
-        #for p in parts:
-            #salome.sg.Display(p)
-            #gg.setTransparency(p,0.8)
-
-    #@pyqtSlot(int)
-    #def set_compound_part_transparency(self, transparency):
-        #for p in self.compound_parts:
-            #gg.setTransparency(p,transparency/100)
-
-    #@pyqtSlot(int)
-    #def display_compound_part(self, display):
-        #for p in self.compound_parts:
-            #if display>0:
-                #salome.sg.Display(p)
-                #gg.setTransparency(p,self.sl_transparency.value()/100)
-            #else:
-                #gg.eraseGO(p)
+    @pyqtSlot(int)
+    def on_progress(self, value):
+        self.pb_search.setValue(value)
+        self.pb_search.setFormat(f"{value}%")
 
     @pyqtSlot()
     def select_file(self):
