@@ -102,8 +102,7 @@ class Tree:
         """
         obj=salome.IDToObject(obj_sid)
         try:
-            obj_type = obj.GetShapeType()
-            return True,obj_type
+            return True,obj.GetShapeType()
 
         except:
             return False,None
@@ -152,7 +151,7 @@ class Tree:
         return parts
     
 
-    def get_by_type(self,type:int):
+    def get_by_type(self,type):
         """
         return a list of objects of type
         """
