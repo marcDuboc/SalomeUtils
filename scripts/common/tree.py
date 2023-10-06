@@ -7,7 +7,7 @@
 import re
 import salome
 import GEOM
-from contact import logging
+from common import logging
 
 def id_to_tuple(id):
     """
@@ -79,6 +79,7 @@ class TreeItem():
         self.id = id
         self.name = name
         self.type = type
+        self.is_group = False
 
     def parent_id(self):
         return self.id[:-1]
@@ -98,15 +99,26 @@ class Tree:
 
     def _check_type(self, obj_sid:str):
         """
-        return True if the object is allowed
+        return the GEOM object type
         """
         obj=salome.IDToObject(obj_sid)
         try:
             return True,obj.GetShapeType()
 
         except:
-            return False,None
+            return False,None,
     
+    def _is_group(self, obj_sid:str):	
+        """
+        return True if the object is a group
+        """
+        obj=salome.IDToObject(obj_sid)
+        try:
+            return obj.GetType()==ObjectType.GROUP
+
+        except:
+            return False
+
     def parse_tree_objects(self, compound_id:str() , component=None):
         """
         retrun a list of tree items within the compound_id
@@ -134,31 +146,35 @@ class Tree:
                 ok, obj_type = self._check_type(sobj.GetID())
                 if ok:
                     item=TreeItem(id,sobj.GetName(),obj_type)
+                    item.is_group = self._is_group(sobj.GetID())
                     objects.append(item)
             iter.Next()
             
         self.objects = objects
         return objects
     
-    def get_parts(self,type=[GEOM.SOLID,GEOM.SHELL]):
+    def get_parts(self,type=[GEOM.SOLID,GEOM.SHELL], include_groups=False):
         """
         return a list of parts
         """
         parts = list()
         for obj in self.objects:
             if obj.type in type:
-                parts.append(obj)
+                if not include_groups and not obj.is_group:
+                    parts.append(obj)
         return parts
     
-
-    def get_by_type(self,type):
+    def get_groups(self, filter=[]):
         """
-        return a list of objects of type
+        return a list of groups
         """
-        objects = list()
+        groups = list()
         for obj in self.objects:
-            if obj.type == type:
-                objects.append(obj)
-        return objects
+            if obj.is_group:
+                if not filter:
+                    groups.append(obj)
+                elif obj.type in filter:
+                    groups.append(obj)
+        return groups
 
 

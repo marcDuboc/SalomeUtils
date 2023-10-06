@@ -7,13 +7,11 @@
 import os
 import time
 import inspect
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout,QLabel, QLineEdit,QTableView, QGroupBox, QHBoxLayout,QCheckBox,QSlider,QFileDialog,QHeaderView, QProgressBar
+from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout,QLabel, QLineEdit,QTableView, QGroupBox, QHBoxLayout,QCheckBox,QDoubleSpinBox,QFileDialog,QHeaderView, QProgressBar
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 from common.bolt.bgui.abstract import TypeDelegate, DeleteDelegate, SwapDelegate, HideShowDelegate, TableModel
 
-#from common.bolt.bgui.manualwin import ManualWindows
-#from common.bolt.bgui.autowin import AutoWindows
 from common import IMG_PATH
 
 import salome
@@ -54,22 +52,97 @@ class BoltGUI(QWidget):
         self.gp_bolt = QGroupBox("Search Bolt", self)
 
         #create options for bolt search
-        self.cb_screw = QCheckBox("screw <-> [hole | nut]", self)
+        self.cb_screw = QCheckBox("screw", self)
         self.cb_screw.setChecked(True)
-        self.cb_hole= QCheckBox("hole <-> hole", self)
+        self.cb_hole= QCheckBox("hole", self)
 
         # add label options 
         self.gp_options = QGroupBox("Options", self)
         #self.lb_options.setAlignment(Qt.AlignCenter)
 
+        #create spinbox for min diameter
+        self.min_diameter = QDoubleSpinBox(self)
+        self.min_diameter.setRange(1,50)
+        self.min_diameter.setSingleStep(1)
+        self.min_diameter.setValue(5)
+        self.min_diameter.setSuffix(" mm")
+        self.min_diameter.setDecimals(0)
+        self.min_diameter.setMinimumSize(70, 10)
+
+        #create spinbox for max diameter
+        self.max_diameter = QDoubleSpinBox(self)
+        self.max_diameter.setRange(0,100)
+        self.max_diameter.setSingleStep(1)
+        self.max_diameter.setValue(24)
+        self.max_diameter.setSuffix(" mm")
+        self.max_diameter.setDecimals(0)
+        self.max_diameter.setMinimumSize(70, 10)
+
+        #create spinbox fof angle tolerance
+        self.angle_tolerance = QDoubleSpinBox(self)
+        self.angle_tolerance.setRange(0,0.1)
+        self.angle_tolerance.setSingleStep(0.01)
+        self.angle_tolerance.setValue(0.01)
+        self.angle_tolerance.setSuffix(" rad")
+        self.angle_tolerance.setDecimals(2)
+        self.angle_tolerance.setMinimumSize(80, 10)
+
+        # create spinbox for distance tolerance
+        self.distance_tolerance = QDoubleSpinBox(self)
+        self.distance_tolerance.setRange(0,0.5)
+        self.distance_tolerance.setSingleStep(0.01)
+        self.distance_tolerance.setValue(0.01)
+        self.distance_tolerance.setSuffix(" mm")
+        self.distance_tolerance.setDecimals(2)
+        self.distance_tolerance.setMinimumSize(80, 10)
+
         #create vbox for bolt options
-        self.vbox_0 = QVBoxLayout()
-        self.vbox_0.addWidget(self.cb_screw)
-        self.vbox_0.addWidget(self.cb_hole)
+        #grp method
+        grp_method= QGroupBox("Method", self)
+        vb_method = QVBoxLayout()
+        vb_method.addWidget(self.cb_screw)
+        vb_method.addWidget(self.cb_hole)
+        grp_method.setLayout(vb_method)
+
+        # grp diameter
+        grp_diameter = QGroupBox("Diameter", self)
+        hb_diameter_min = QHBoxLayout()
+        hb_diameter_min.addWidget(QLabel("Min"))
+        hb_diameter_min.addWidget(self.min_diameter)
+        
+        hb_diameter_max = QHBoxLayout()
+        hb_diameter_max.addWidget(QLabel("Max"))
+        hb_diameter_max.addWidget(self.max_diameter)
+
+        vb_diameter= QVBoxLayout()
+        vb_diameter.addLayout(hb_diameter_min)
+        vb_diameter.addLayout(hb_diameter_max)
+        grp_diameter.setLayout(vb_diameter)
+
+        # grp tolerance
+        grp_tolerance= QGroupBox("Tolerance", self)
+        hb_angle_tolerance = QHBoxLayout()
+        hb_angle_tolerance.addWidget(QLabel("Angle"))
+        hb_angle_tolerance.addWidget(self.angle_tolerance)
+
+        hb_distance_tolerance = QHBoxLayout()
+        hb_distance_tolerance.addWidget(QLabel("Distance"))
+        hb_distance_tolerance.addWidget(self.distance_tolerance)
+
+        vb_tolerance= QVBoxLayout()
+        vb_tolerance.addLayout(hb_angle_tolerance)
+        vb_tolerance.addLayout(hb_distance_tolerance)
+        grp_tolerance.setLayout(vb_tolerance)
 
         #add  bolt options to groupbox
-        self.gp_options.setLayout(self.vbox_0)
-        
+        l_options = QHBoxLayout()
+        l_options.addWidget(grp_method)
+        l_options.addWidget(grp_diameter)
+        l_options.addWidget(grp_tolerance)
+        self.gp_options.setLayout(l_options)
+
+        #======================= 
+        # create lineedit for input
         self.le_input = QLineEdit()    
         self.le_input.setReadOnly(True)
         self.le_input.setText("select a compound or several parts")

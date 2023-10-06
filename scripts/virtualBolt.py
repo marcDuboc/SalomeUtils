@@ -16,7 +16,7 @@ from salome.kernel.studyedit import getStudyEditor
 from salome.geom import geomtools, geomBuilder
 
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt
-from PyQt5.QtWidgets import QDockWidget
+from PyQt5.QtWidgets import QDockWidget,QMessageBox
 
 #for debbuging
 from importlib import reload
@@ -33,6 +33,7 @@ try:
     from common.properties import get_properties
     from common.bolt.aster import MakeComm
     from common import logging
+
     
 except:
     script_directory = os.path.dirname(
@@ -107,7 +108,7 @@ class Bolt1D(QObject):
     @pyqtSlot()
     def select(self):
         self.parts=[]
-        self.compound_parts = []
+        self.compound_id = None
         selCount = salome.sg.SelectedCount()
         logging.info(f"selected count: {selCount}") 
 
@@ -154,11 +155,13 @@ class Bolt1D(QObject):
         lines_ids = []
 
         self.parse_progess.emit(0)
-
+        logging.info(f"compound_id: {self.compound_id}")
         if self.compound_id:
             #get the parts from the compound
-            parts_item = self.Tree.parse_tree_objects(self.compound_parts)
-            self.parts = [p.get_sid() for p in parts_item]
+            self.Tree.parse_tree_objects(self.compound_id)
+            solids = self.Tree.get_parts(type=[GEOM.SOLID,GEOM.SHELL])
+            logging.info(solids)
+            self.parts_id = [p.get_sid() for p in solids]
             self.compound_id = None
 
         if self.parts_id:
@@ -181,54 +184,68 @@ class Bolt1D(QObject):
 
                 self.parse_progess.emit(progress)
 
-        connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=0.01, tol_dist=0.1)
-        
-        logging.info(connections)
+            connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=0.01, tol_dist=0.1)
+            
+            logging.info(connections)
 
-        # create virtual bolts
-        for bolt in connections['bolts']:
-            v_bolt = create_virtual_bolt(bolt)
+            # create virtual bolts
+            for bolt in connections['bolts']:
+                v_bolt = create_virtual_bolt(bolt)
 
-            if not v_bolt is None:
-                v_bolts.append(v_bolt)    
-                for p in bolt:
-                    parts_to_delete.append(p.part_id)
+                if not v_bolt is None:
+                    v_bolts.append(v_bolt)    
+                    for p in bolt:
+                        parts_to_delete.append(p.part_id)
 
-        for threads in connections['threads']:
-            v_bolt = create_virtual_bolt_from_thread(threads)
+            for threads in connections['threads']:
+                v_bolt = create_virtual_bolt_from_thread(threads)
 
-            if not v_bolt is None:
-                v_bolts.append(v_bolt)
-                for p in threads:
-                    if type(p) == Screw:
-                            parts_to_delete.append(p.part_id)
+                if not v_bolt is None:
+                    v_bolts.append(v_bolt)
+                    for p in threads:
+                        if type(p) == Screw:
+                                parts_to_delete.append(p.part_id)
 
-        # build geom in salome
-        for v_bolt in v_bolts:
-            lines_ids.append(create_salome_line(v_bolt))
+            # build geom in salome
+            for v_bolt in v_bolts:
+                lines_ids.append(create_salome_line(v_bolt))
 
-        vbf= Geompy.NewFolder('Virtual Bolts')
-        Geompy.PutListToFolder(lines_ids, vbf)
+            vbf= Geompy.NewFolder('Virtual Bolts')
+            Geompy.PutListToFolder(lines_ids, vbf)
 
-        # add virtual bolts to table
-        for v_bolt in v_bolts:
-            self.bolts.append(v_bolt)
+            # add virtual bolts to table
+            for v_bolt in v_bolts:
+                self.bolts.append(v_bolt)
 
-        b_list = self.virtual_bolt_to_table()
-        self.Gui.set_data(b_list)
+            b_list = self.virtual_bolt_to_table()
+            self.Gui.set_data(b_list)
 
-        # delete parts
-        delete=True
-        if delete:
-            for grp in parts_to_delete:
-                Gst.removeFromStudy(grp)
-                Gst.eraseShapeByEntry(grp)
+            # delete parts
+            delete=True
+            if delete:
+                for grp in parts_to_delete:
+                    Gst.removeFromStudy(grp)
+                    Gst.eraseShapeByEntry(grp)
 
-        self.parse_progess.emit(100)    
+            self.parse_progess.emit(100)    
 
-        # refresh viewer
-        salome.sg.updateObjBrowser()
-        
+            # refresh viewer
+            salome.sg.updateObjBrowser()
+
+            # display message box with number of virtaul bolt created. On Ok, emit signal to reset the GUI
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText(f"{len(v_bolts)} virtual bolts created")
+            msg.setWindowTitle("Virtual Bolt")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+            self.parse_progess.emit(0)
+            self.parts_id =[]
+            self.compound_id = None
+            self.parts_selected.emit("select a compound or several parts","black")
+
+
+    
     
 
 class MyDockWidget(QDockWidget):

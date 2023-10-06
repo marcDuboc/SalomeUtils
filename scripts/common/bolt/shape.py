@@ -105,9 +105,8 @@ class VirtualBolt():
             setattr(self, key, value)
 
 
-
     def __repr__(self) -> str:
-        return f"VirtualBolt({self.id_instance}, {self.start}, {self.end}, {self.radius}, {self.start_radius}, {self.start_height}, {self.end_radius}, {self.end_height})"
+        return f"VirtualBolt({self.id_instance}, {self.start}, {self.end}, {self.radius}, {self.start_radius}, {self.start_height}, {self.end_radius}, {self.end_height}, {self.preload})"
     
     def get_start_name(self):
         return f"_B{self.id_instance}S"
@@ -122,7 +121,7 @@ class VirtualBolt():
         return f"_B{self.id_instance}"
     
     def get_detail_name(self):
-        return f"_B{self.id_instance}_{round(self.radius,2)}_{round(self.start_radius,2)}_{round(self.end_radius,2)}_{round(self.start_height)}_{round(self.end_height)}"
+        return f"_B{self.id_instance}_{round(self.radius,1)}_{round(self.start_radius,1)}_{round(self.end_radius,1)}_{round(self.start_height,1)}_{round(self.end_height,1)}_{round(self.preload,1)}"
     
     def get_length(self):
         return np.linalg.norm(self.end.get_coordinate() - self.start.get_coordinate())
@@ -435,7 +434,7 @@ class Parse():
 
         return threads
 
-    def parse_obj(self,obj_id:str, min_diameter:float=3, max_diameter:float=20):
+    def parse_obj(self,obj_id:str, min_diameter:float=3, max_diameter:float=20, ):
         """function to extract kind of object"""
         obj = salome.IDToObject(obj_id)
 

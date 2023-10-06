@@ -22,23 +22,23 @@ from importlib import reload
 # add contact module
 try:
     reload(sys.modules['contact.data', 'contact.geom', 'contact.tree', 'contact.interface'])
-    from contact.data import ContactManagement,GroupItem
-    from contact.geom import ParseShapesIntersection
-    from contact.tree import Tree
-    from contact.cgui.mainwin import ContactGUI
-    from contact.aster.comm import MakeComm
-    from contact import logging
+    from common.contact.data import ContactManagement,GroupItem
+    from common.contact.geom import ParseShapesIntersection
+    from common.contact.tree import Tree
+    from common.contact.cgui.mainwin import ContactGUI
+    from common.contact.aster.comm import MakeComm
+    from common.contact import logging
     
 except:
     script_directory = os.path.dirname(
         os.path.abspath(inspect.getfile(inspect.currentframe())))
     sys.path.append(script_directory)
-    from contact.data import ContactManagement,GroupItem
-    from contact.geom import ParseShapesIntersection
-    from contact.tree import Tree
-    from contact.cgui.mainwin import ContactGUI
-    from contact.aster.comm import MakeComm
-    from contact import logging
+    from common.contact.data import ContactManagement,GroupItem
+    from common.contact.geom import ParseShapesIntersection
+    from common.contact.tree import Tree
+    from common.contact.cgui.mainwin import ContactGUI
+    from common.contact.aster.comm import MakeComm
+    from common.contact import logging
 
 # Detect current study
 geompy = geomBuilder.New()
