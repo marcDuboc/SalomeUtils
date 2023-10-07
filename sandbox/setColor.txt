@@ -1,8 +1,0 @@
-#set color directly to GEOM object => use salome.SALOMEDS.Color(R,G,B)
-
-# to change the coloer
-geom_object.SetColor(salome.SALOMEDS.Color(0.5,0.5,0.5))
-
-# to update the viewer
-gg = salome.ImportComponentGUI("GEOM")
-gg.setDisplayMode(geom_object.GetStudyEntry(),2)
