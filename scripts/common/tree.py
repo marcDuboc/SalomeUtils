@@ -88,7 +88,7 @@ class TreeItem():
         return tuple_to_id(self.id)
     
     def __repr__(self):
-        return f"TreeItem(id={self.id},name={self.name},type={self.type})"
+        return f"TreeItem(id={self.id},name={self.name},type={self.type},is_group={self.is_group})"
 
 class Tree:
 

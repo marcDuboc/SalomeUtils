@@ -8,8 +8,8 @@ import os
 from PyQt5.QtWidgets import QComboBox, QItemDelegate,QStyle
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal, QEvent
-from contact.cgui import IMG_PATH
-from contact import logging
+from common import IMG_PATH
+from common import logging
 
 class TypeDelegate(QItemDelegate):
     changeType = pyqtSignal(int,str) 

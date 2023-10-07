@@ -23,22 +23,22 @@ from importlib import reload
 try:
     reload(sys.modules['contact.data', 'contact.geom', 'contact.tree', 'contact.interface'])
     from common.contact.data import ContactManagement,GroupItem
-    from common.contact.geom import ParseShapesIntersection
-    from common.contact.tree import Tree
+    from common.contact.intersect import ParseShapesIntersection
+    from common.contact.contactTree import ContactTree
     from common.contact.cgui.mainwin import ContactGUI
     from common.contact.aster.comm import MakeComm
-    from common.contact import logging
+    from common import logging
     
 except:
     script_directory = os.path.dirname(
         os.path.abspath(inspect.getfile(inspect.currentframe())))
     sys.path.append(script_directory)
     from common.contact.data import ContactManagement,GroupItem
-    from common.contact.geom import ParseShapesIntersection
-    from common.contact.tree import Tree
+    from common.contact.intersect import ParseShapesIntersection
+    from common.contact.contactTree import ContactTree
     from common.contact.cgui.mainwin import ContactGUI
     from common.contact.aster.comm import MakeComm
-    from common.contact import logging
+    from common import logging
 
 # Detect current study
 geompy = geomBuilder.New()
@@ -62,7 +62,7 @@ class ContactAuto(QObject):
         super(ContactAuto, self).__init__()
 
         self.Gui = ContactGUI()
-        self.Tree = Tree()
+        self.Tree = ContactTree()
         self.Contact = ContactManagement()
         self.Intersect = ParseShapesIntersection()
 

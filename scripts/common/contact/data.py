@@ -5,7 +5,6 @@
 # Version: 28/08/2023
 
 import re
-import time
 import json
 import itertools
 from collections import OrderedDict
@@ -13,9 +12,7 @@ import salome
 import GEOM
 from salome.geom import geomBuilder, geomtools
 from salome.kernel.studyedit import getStudyEditor
-from contact.geom import ShapeProperties
-from contact import logging
-
+from common import logging
 
 Geompy = geomBuilder.New()
 StudyEditor = getStudyEditor()

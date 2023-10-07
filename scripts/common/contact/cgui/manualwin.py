@@ -7,8 +7,8 @@
 import os
 from PyQt5.QtWidgets import QWidget, QGridLayout, QLineEdit,QGroupBox, QHBoxLayout, QPushButton
 from PyQt5.QtGui import QIcon
-from contact.cgui import IMG_PATH
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
+from common import IMG_PATH
 
 class ManualWindows(QWidget):
     """Manual contact creation windows"""

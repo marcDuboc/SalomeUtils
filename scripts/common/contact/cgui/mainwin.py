@@ -10,10 +10,10 @@ import inspect
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout,QLabel, QLineEdit,QTableView, QGroupBox, QHBoxLayout,QCheckBox,QSlider,QFileDialog,QHeaderView
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
-from contact.cgui.abstract import TypeDelegate, DeleteDelegate, SwapDelegate, HideShowDelegate, TableModel
-from contact.cgui.manualwin import ManualWindows
-from contact.cgui.autowin import AutoWindows
-from contact.cgui import IMG_PATH
+from common.contact.cgui.abstract import TypeDelegate, DeleteDelegate, SwapDelegate, HideShowDelegate, TableModel
+from common.contact.cgui.manualwin import ManualWindows
+from common.contact.cgui.autowin import AutoWindows
+from common import IMG_PATH
 
 import salome
 salome.salome_init()

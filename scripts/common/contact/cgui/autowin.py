@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QPushButton, QWidget, QGridLayout, QLabel, QLineEdit
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 
-from contact.cgui import IMG_PATH
+from common import IMG_PATH
 
 class AutoWindows(QWidget):
     partSelection = pyqtSignal()
