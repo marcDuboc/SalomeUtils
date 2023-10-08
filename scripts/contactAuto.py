@@ -26,7 +26,7 @@ try:
     from common.contact.intersect import ParseShapesIntersection
     from common.contact.contactTree import ContactTree
     from common.contact.cgui.mainwin import ContactGUI
-    from common.contact.aster.comm import MakeComm
+    from scripts.common.contact.aster import MakeComm
     from common import logging
     
 except:
@@ -37,7 +37,7 @@ except:
     from common.contact.intersect import ParseShapesIntersection
     from common.contact.contactTree import ContactTree
     from common.contact.cgui.mainwin import ContactGUI
-    from common.contact.aster.comm import MakeComm
+    from scripts.common.contact.aster import MakeComm
     from common import logging
 
 # Detect current study
