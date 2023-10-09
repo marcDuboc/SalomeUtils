@@ -21,12 +21,16 @@ from importlib import reload
 
 # add contact module
 try:
-    reload(sys.modules['contact.data', 'contact.geom', 'contact.tree', 'contact.interface'])
+    modules = ['common.contact.data', 'common.contact.intersect', 'common.contact.contactTree','common.contact.aster', 'common.contact.cgui.mainwin']
+    for m in modules:
+        if m in sys.modules:
+            reload(sys.modules[m])
+
     from common.contact.data import ContactManagement,GroupItem
     from common.contact.intersect import ParseShapesIntersection
     from common.contact.contactTree import ContactTree
     from common.contact.cgui.mainwin import ContactGUI
-    from scripts.common.contact.aster import MakeComm
+    from common.contact.aster import MakeComm
     from common import logging
     
 except:
@@ -37,7 +41,7 @@ except:
     from common.contact.intersect import ParseShapesIntersection
     from common.contact.contactTree import ContactTree
     from common.contact.cgui.mainwin import ContactGUI
-    from scripts.common.contact.aster import MakeComm
+    from common.contact.aster import MakeComm
     from common import logging
 
 # Detect current study
@@ -173,6 +177,7 @@ class ContactAuto(QObject):
             self.progess_autocontact.emit(progress)
             
             res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=gap,tol=angle,merge_by_part=merge_by_part, merge_by_proximity=merge_by_proximity)
+            logging.debug("process_contact: {} {}".format(res,candidate))
 
             if res:
                 # add new contacts to contactManager

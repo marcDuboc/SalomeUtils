@@ -28,6 +28,8 @@ class ShapeCoincidence():
     def are_coincident(self, shape1, shape2):
         prop1 = get_properties(shape1)
         prop2 = get_properties(shape2)
+        logging.info(f"prop1: {prop1}")
+        logging.info(f"prop2: {prop2}")
 
         if prop1['type'] in ('CYLINDER','CYLINDER2D') and prop2['type'] in ('CYLINDER','CYLINDER2D'):
             if self._are_cylinders_coincident(shape1, prop1 ,shape2, prop2):
@@ -306,6 +308,7 @@ class ParseShapesIntersection():
 
         try:
             isconnect, res1, res2 = geompy.FastIntersect(obj1, obj2, gap)
+            logging.info(f"isconnect: {isconnect}")
             if isconnect:
                 uncheck_1 = geompy.SubShapes(obj1, res1)
                 uncheck_2 = geompy.SubShapes(obj2, res2)
@@ -317,6 +320,7 @@ class ParseShapesIntersection():
                 for c in combinaison:
                     try:
                         connected, _, _ = geompy.FastIntersect(c[0], c[1], gap)
+                        logging.info(f"subshapes {c[0]} and {c[1]} are connected")
                     
                     except:
                         connected = False
