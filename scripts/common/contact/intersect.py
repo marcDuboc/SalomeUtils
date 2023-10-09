@@ -18,7 +18,6 @@ except:
 geompy = geomBuilder.New()
 salome.salome_init()
 
-
 class ShapeCoincidence():
 
     def __init__(self):
