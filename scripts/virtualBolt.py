@@ -15,7 +15,7 @@ import salome
 from salome.kernel.studyedit import getStudyEditor
 from salome.geom import geomtools, geomBuilder
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt, QVariant
 from PyQt5.QtWidgets import QDockWidget,QMessageBox
 
 #for debbuging
@@ -29,7 +29,7 @@ try:
 
     from common.bolt.bgui.mainwin import BoltGUI
     from common.bolt.treeBolt import TreeBolt
-    from common.bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
+    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads,pair_holes , create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
     from common.properties import get_properties
     from common.bolt.aster import MakeComm
     from common import logging
@@ -42,7 +42,7 @@ except:
 
     from common.bolt.bgui.mainwin import BoltGUI
     from common.bolt.treeBolt import TreeBolt
-    from common.bolt.shape import Parse, Nut, Screw, Thread, pair_screw_nut_threads, create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
+    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
     from common.properties import get_properties
     from common.bolt.aster import MakeComm
     from common import logging
@@ -110,7 +110,7 @@ class Bolt1D(QObject):
         self.parts=[]
         self.compound_id = None
         selCount = salome.sg.SelectedCount()
-        logging.info(f"selected count: {selCount}") 
+        #logging.info(f"selected count: {selCount}") 
 
         if selCount == 0:
             self.parts_selected.emit("No compound or parts selected!","red")
@@ -145,8 +145,8 @@ class Bolt1D(QObject):
             else:
                 self.parts_selected.emit("select at least 2 parts (solid or shell) or a compound","red")
                 
-    @pyqtSlot()
-    def parse_selected(self):
+    @pyqtSlot(QVariant,float,float,float,float)
+    def parse_selected(self,method:Method=Method.SCREW,d_min=3,d_max=36,tol_axis=0.01,tol_dist=0.01):
         nuts=[]
         screws=[]
         threads=[]
@@ -155,12 +155,12 @@ class Bolt1D(QObject):
         lines_ids = []
 
         self.parse_progess.emit(0)
-        logging.info(f"compound_id: {self.compound_id}")
+        #logging.info(f"compound_id: {self.compound_id}")
         if self.compound_id:
             #get the parts from the compound
             self.Tree.parse_tree_objects(self.compound_id)
             solids = self.Tree.get_parts(type=[GEOM.SOLID,GEOM.SHELL])
-            logging.info(solids)
+            #logging.info(solids)
             self.parts_id = [p.get_sid() for p in solids]
             self.compound_id = None
 
@@ -169,7 +169,7 @@ class Bolt1D(QObject):
             self.parse_progess.emit(5)
             for p in self.parts_id:
                 progress += 80/len(self.parts_id)
-                o = self.Parse.parse_obj(p)
+                o = self.Parse.parse_obj(p,min_diameter=d_min,max_diameter=d_max)
                 
                 if type(o) == Nut:
                     nuts.append(o)
@@ -184,9 +184,13 @@ class Bolt1D(QObject):
 
                 self.parse_progess.emit(progress)
 
-            connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=0.01, tol_dist=0.1)
+            if Method.SCREW == method:
+                connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=tol_axis, tol_dist=tol_dist)
+
+            elif Method.HOLE == method:
+                connections = pair_holes(threads,tol_angle=tol_axis, tol_dist=tol_dist)
             
-            logging.info(connections)
+            #logging.info(connections)
 
             # create virtual bolts
             for bolt in connections['bolts']:

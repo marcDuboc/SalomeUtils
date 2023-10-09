@@ -9,9 +9,9 @@ import time
 import inspect
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout,QLabel, QLineEdit,QTableView, QGroupBox, QHBoxLayout,QCheckBox,QDoubleSpinBox,QFileDialog,QHeaderView, QProgressBar
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QVariant
 from common.bolt.bgui.abstract import TypeDelegate, DeleteDelegate, SwapDelegate, HideShowDelegate, TableModel
-
+from common.bolt.shape import Method
 from common import IMG_PATH
 
 import salome
@@ -22,7 +22,7 @@ class BoltGUI(QWidget):
 
     # define custom signals
     select = pyqtSignal()
-    parse = pyqtSignal()
+    parse = pyqtSignal(QVariant,float,float,float,float)
 
     closing = pyqtSignal()
     export_contact = pyqtSignal(str,str,bool)
@@ -32,6 +32,7 @@ class BoltGUI(QWidget):
         self._data = []
         self.init_UI()
         self.file_name = ''
+        self.method = Method.SCREW
 
     def init_UI(self):
         # Table model
@@ -236,7 +237,7 @@ class BoltGUI(QWidget):
 
         # connect signals
         self.bt_input.clicked.connect(self.select.emit)
-        self.bt_search.clicked.connect(self.parse.emit)
+        self.bt_search.clicked.connect(self.on_search)
 
         self.bt_export.clicked.connect(self.select_file)
         self.cb_export_json.stateChanged.connect(self.on_change_export_json)
@@ -249,6 +250,10 @@ class BoltGUI(QWidget):
     def on_selection(self, master_compound_name, color='black'):
         self.le_input.setText(master_compound_name)
         self.le_input.setStyleSheet(f"color: {color};")
+    
+    @pyqtSlot()
+    def on_search(self):
+        self.parse.emit(self.method, self.min_diameter.value(), self.max_diameter.value(), self.angle_tolerance.value(), self.distance_tolerance.value())
 
     @pyqtSlot(int)
     def on_progress(self, value):

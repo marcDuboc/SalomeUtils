@@ -1,6 +1,7 @@
 
 import numpy as np
 from itertools import combinations,product
+from enum import Enum
 
 import GEOM
 import salome
@@ -13,6 +14,16 @@ salome.salome_init()
 
 from common.properties import get_properties, Point, Vector, Cylinder, Plane, DiskCircle, DiskAnnular
 from common import logging
+
+class Method(Enum):
+    """
+    Enum class to store the method used to create the bolt
+    SCREW: if screw and nut availbel in the CAD. First search for screw then pair with nut or hole
+    HOLE: if no screw in the CAD. first search for hole then pair other hole
+
+    """
+    SCREW = 1
+    HOLE = 2
 
 class Screw():
     """
@@ -524,6 +535,9 @@ def pair_screw_nut_threads(screw_list, nut_list, treads_list,tol_angle=0.01, tol
     # TODO 6.remove the pair with the same screw on the screw_tread_pairs
 
     return dict(bolts=screw_nut_pairs, threads=screw_thread_pairs)
+
+def pair_holes(holes_list,tol_angle=0.01, tol_dist=0.01) -> dict:
+    pass
 
 def create_virtual_bolt(pair:list):
 
