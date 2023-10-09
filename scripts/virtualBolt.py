@@ -103,7 +103,6 @@ class Bolt1D(QObject):
         self.Gui.parse.connect(self.parse_selected)
         self.parse_progess.connect(self.Gui.on_progress)
 
-
     # Slot ====================================================================          
     @pyqtSlot()
     def select(self):
@@ -247,11 +246,7 @@ class Bolt1D(QObject):
             self.parts_id =[]
             self.compound_id = None
             self.parts_selected.emit("select a compound or several parts","black")
-
-
-    
-    
-
+  
 class MyDockWidget(QDockWidget):
     widgetClosed = pyqtSignal()
 
@@ -260,7 +255,6 @@ class MyDockWidget(QDockWidget):
         super(MyDockWidget, self).closeEvent(event)
 
 bolt_instance = Bolt1D()
-
 
 def delete_bolt_instance():
     global bolt_instance
