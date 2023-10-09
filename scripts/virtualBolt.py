@@ -34,7 +34,6 @@ try:
     from common.bolt.aster import MakeComm
     from common import logging
 
-    
 except:
     script_directory = os.path.dirname(
         os.path.abspath(inspect.getfile(inspect.currentframe())))

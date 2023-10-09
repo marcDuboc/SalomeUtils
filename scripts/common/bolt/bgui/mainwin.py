@@ -5,8 +5,6 @@
 # Version: 28/08/2023
 
 import os
-import time
-import inspect
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout,QLabel, QLineEdit,QTableView, QGroupBox, QHBoxLayout,QCheckBox,QDoubleSpinBox,QFileDialog,QHeaderView, QProgressBar
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QVariant
@@ -333,11 +331,6 @@ class BoltGUI(QWidget):
             header.setSectionResizeMode(6, QHeaderView.ResizeToContents)
             header.setSectionResizeMode(7, QHeaderView.ResizeToContents)
 
-    #def openAutoWindow(self):
-    #    self.autoWindow.show()
-
-    #def openManualWindow(self):
-    #    self.manualWindow.show()
 
           
     
