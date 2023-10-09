@@ -6,7 +6,7 @@ import copy
 import GEOM
 import salome
 from salome.geom import geomBuilder
-from common.properties import get_properties
+from common.properties import get_properties,Cylinder
 from common import logging
 
 try:
@@ -28,10 +28,8 @@ class ShapeCoincidence():
     def are_coincident(self, shape1, shape2):
         prop1 = get_properties(shape1)
         prop2 = get_properties(shape2)
-        logging.info(f"prop1: {prop1}")
-        logging.info(f"prop2: {prop2}")
 
-        if prop1['type'] in ('CYLINDER','CYLINDER2D') and prop2['type'] in ('CYLINDER','CYLINDER2D'):
+        if type(prop1) is Cylinder and type(prop2) is Cylinder:
             if self._are_cylinders_coincident(shape1, prop1 ,shape2, prop2):
                 return True
             else:
@@ -61,9 +59,9 @@ class ShapeCoincidence():
     
         # Normaliser les vecteurs de direction
         dir1_normalized = np.array(
-            cylinder1['axis'].get_vector()) / np.linalg.norm(cylinder1['axis'].get_vector())
+            cylinder1.axis.get_vector()) / np.linalg.norm(cylinder1.axis.get_vector())
         dir2_normalized = np.array(
-            cylinder2['axis'].get_vector()) / np.linalg.norm(cylinder2['axis'].get_vector())
+            cylinder2.axis.get_vector()) / np.linalg.norm(cylinder2.axis.get_vector())
 
         # Vérifier la colinéarité des axes
         dir_diff = np.arccos(
@@ -74,36 +72,35 @@ class ShapeCoincidence():
 
         # Vérifier la coïncidence des axes
         distance_centers_to_line1 = self.point_to_line_distance(
-            cylinder2['origin'].get_coordinate(), cylinder1['origin'].get_coordinate(), dir1_normalized)
+            cylinder2.origin.get_coordinate(), cylinder1.origin.get_coordinate(), dir1_normalized)
         distance_centers_to_line2 = self.point_to_line_distance(
-            cylinder1['origin'].get_coordinate(), cylinder2['origin'].get_coordinate(), dir2_normalized)
+            cylinder1.origin.get_coordinate(), cylinder2.origin.get_coordinate(), dir2_normalized)
 
-        if distance_centers_to_line1 > (cylinder1['radius'] + tolerance) or \
-                distance_centers_to_line2 > (cylinder2['radius'] + tolerance):
+        if distance_centers_to_line1 > (cylinder1.radius1 + tolerance) or \
+                distance_centers_to_line2 > (cylinder2.radius1 + tolerance):
             logging.info(f"distance_centers_to_line1: {distance_centers_to_line1}")
             return False
 
         # Check if overlap between cylinders along the axis
         distance_centers = self.point_to_point_distance(
-            cylinder1['origin'].get_coordinate(), cylinder2['origin'].get_coordinate())
+            cylinder1.origin.get_coordinate(), cylinder2.origin.get_coordinate())
         # 1% of the smallest length
-        gap_mini = min(cylinder1['length'], cylinder2['length'])*0.01
-        if (distance_centers + gap_mini) > (cylinder1['length'] / 2 + cylinder2['length'] / 2):
+        gap_mini = min(cylinder1.height, cylinder2.height)*0.01
+        if (distance_centers + gap_mini) > (cylinder1.height / 2 + cylinder2.height / 2):
             logging.info(f"distance_centers: {distance_centers}")
             return False
 
         # check if diameter are equal and area contact is not null
-        if cylinder1['radius'] == cylinder2['radius']:
+        if cylinder1.radius1 == cylinder2.radius1:
             common = geompy.MakeCommon(shape1, shape2)
             props = geompy.BasicProperties(common)
             area_com = props[1]
             if area_com == 0.0:
-                logging.info(f"area_com: {area_com}")
                 return False
 
         # Compare radius
-        if (abs(cylinder1['radius'] - cylinder2['radius']) > gap):
-            logging.info(f"radius: {abs(cylinder1['radius'] - cylinder2['radius'])}")
+        if (abs(cylinder1.radius1 - cylinder2.radius1) > gap):
+            logging.info(f"radius: {abs(cylinder1.radius1 - cylinder2.radius1)}")
             return False
 
         return True
@@ -273,10 +270,10 @@ class ParseShapesIntersection():
         # set back the is to salome object
         regroup_AB = list(set(regroup_AB))
 
-        logging.info(f"pairs_AB: {pairs_AB}")
-        logging.info(f"A_connection: {A_connection}")
-        logging.info(f"B_connection: {B_connection}")
-        logging.info(f"regroup_AB: {regroup_AB}")
+        #logging.info(f"pairs_AB: {pairs_AB}")
+        #logging.info(f"A_connection: {A_connection}")
+        #logging.info(f"B_connection: {B_connection}")
+        #logging.info(f"regroup_AB: {regroup_AB}")
 
         res=list()
         for con in regroup_AB:
@@ -302,6 +299,7 @@ class ParseShapesIntersection():
         self.Coincidence.tolerance = tol
         candidates = list()
         group = list()
+
         has_contact = False
 
         logging.info(f"Intersection between {obj1_sid} and {obj2_sid}")
@@ -320,13 +318,13 @@ class ParseShapesIntersection():
                 for c in combinaison:
                     try:
                         connected, _, _ = geompy.FastIntersect(c[0], c[1], gap)
-                        logging.info(f"subshapes {c[0]} and {c[1]} are connected")
+                        #logging.info(f"subshapes {c[0]} and {c[1]} are connected")
                     
                     except:
                         connected = False
 
                     if connected:
-                        # check for shape coincidence
+                        # check for shape coincidence for cylinder
                         if self.Coincidence.are_coincident(c[0],c[1]):
                             has_contact = True
                             candidates.append(([c[0]],[c[1]]))
@@ -334,6 +332,7 @@ class ParseShapesIntersection():
                         else:
                         # check by contact area
                             area = self._get_contact_area(c[0], c[1])
+                            #logging.info(f"area: {area}")
 
                             if area > 0:
                                 has_contact = True
