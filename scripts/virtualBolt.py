@@ -19,18 +19,20 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt, QVariant
 from PyQt5.QtWidgets import QDockWidget,QMessageBox
 
 #for debbuging
+DEBUG = True
 from importlib import reload
 
 try:
-    modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster','common.bolt.bgui.mainwin','common']
-    for m in modules:
-        if m in sys.modules:
-            reload(sys.modules[m])
+    if DEBUG:
+        modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster','common.bolt.bgui.mainwin','common']
+        for m in modules:
+            if m in sys.modules:
+                reload(sys.modules[m])
 
     from common.bolt.bgui.mainwin import BoltGUI
     from common.bolt.treeBolt import TreeBolt
     from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
-    from common.properties import get_properties
+    from common.properties import *
     from common.bolt.aster import MakeComm
     from common import logging
 
@@ -42,7 +44,7 @@ except:
     from common.bolt.bgui.mainwin import BoltGUI
     from common.bolt.treeBolt import TreeBolt
     from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
-    from common.properties import get_properties
+    from common.properties import *
     from common.bolt.aster import MakeComm
     from common import logging
 
@@ -166,18 +168,20 @@ class Bolt1D(QObject):
             progress = 5
             self.parse_progess.emit(5)
             for p in self.parts_id:
+                logging.info(f"part id: {p}")
                 progress += 80/len(self.parts_id)
                 o = self.Parse.parse_obj(p,min_diameter=d_min,max_diameter=d_max)
+                logging.info(f"o: {o}")
                 
-                if type(o) == Nut:
+                if isinstance(o,Nut):
                     nuts.append(o)
 
-                elif type(o) == Screw:
+                elif isinstance(o,Screw):
                     screws.append(o)
 
-                elif type(o) == list:
+                elif isinstance(o,list):
                     for e in o:
-                        if type(e) == Thread:
+                        if isinstance(o,Thread):
                             threads.append(e)
 
                 self.parse_progess.emit(progress)

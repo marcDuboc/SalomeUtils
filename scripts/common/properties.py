@@ -2,6 +2,7 @@ import numpy as np
 import salome
 import GEOM
 from salome.geom import geomBuilder
+from common import logging
 
 Geompy = geomBuilder.New()
 
@@ -150,14 +151,18 @@ type_to_class = {
 
 def check_cylinder_direction(kos_list,obj):
     """ Check if the cylinder is in the right direction. """
-
+    logging.info("Check cylinder direction")
     explode = Geompy.SubShapeAll(obj,GEOM.EDGE)
     edges = [get_properties(e) for e in explode]
 
+    vector_cylinder = Vector(*kos_list[3:6])
+    origin_cylinder = Point(*kos_list[0:3])
+    height_cylinder = kos_list[7]
+    radius_cylinder = kos_list[6]
+
+
     if any(isinstance(e,(Circle,ArcCircle)) for e in edges) == False:
-            return None
-        
-    if any(isinstance(e,Segment) for e in edges) == True:
+            logging.info("No circle or arc circle found")
             return None
     
     else: 
@@ -166,14 +171,9 @@ def check_cylinder_direction(kos_list,obj):
             if isinstance(e,(Circle,ArcCircle)):
                 oc = e.origin.get_coordinate()
                 origin_circles.append(Point(*oc))
-        
-        vector_cylinder = Vector(*kos_list[3:6])
-        origin_cylinder = Point(*kos_list[0:3])
-        height_cylinder = kos_list[7]
-        radius_cylinder = kos_list[6]
 
         # get the distance from the origin of the cylinder and the origin of the circles
-        d = [np.linalg.norm(o-origin_cylinder.get_coordinate()) for o in origin_circles]
+        d = [np.linalg.norm(o.get_coordinate()-origin_cylinder.get_coordinate()) for o in origin_circles]
 
         # get the index of the min distance
         po = np.argmin(d)
@@ -191,8 +191,9 @@ def check_cylinder_direction(kos_list,obj):
                     "kind": "CYLINDER"}
         
         else:
+            reverse_vector = vector_cylinder.get_vector()*-1
             return {"origin": origin_cylinder,
-                    "axis": vector_cylinder*-1,
+                    "axis": Vector(*reverse_vector),
                     "radius1": radius_cylinder,
                     "height": height_cylinder,
                     "kind": "CYLINDER"}

@@ -182,10 +182,13 @@ class ShapeCoincidence():
 
         return True
     
-    def closests_surfaces_from_cylinder_extremity(self, cylinder, surfaces):
+    def closests_surfaces_from_cylinder_extremity(self, cylinder, candidates):
         """
         Retourne les surfaces les plus proche des extrémités d'un cylindre
         """
+
+        # filter by class
+        surfaces = [s for s in candidates if isinstance(s,(DiskCircle, DiskAnnular))]
 
         # get both extrmity of the cylinder
         e1 = cylinder.origin.get_coordinate()
@@ -207,6 +210,7 @@ class ShapeCoincidence():
             s2 = surfaces[np.argmin(s2n)]
 
             logging.info(f"s1: {s1} \t s2: {s2}")
+            logging.info(f"s1 origin: {s1.origin.get_coordinate()} \t s2 origin: {s2.origin.get_coordinate()}")
 
             if isinstance(s1,(DiskCircle, DiskAnnular)) and isinstance(s2,(DiskCircle, DiskAnnular)):
                 # check if attribut radius2 is present and get the larger radius from  the two
@@ -477,11 +481,15 @@ class Parse():
             is_candidate = False
             for s in subshapes:
                     p = get_properties(s)
-
+                    logging.info(f"p: {p}")
+                    logging.info(f"p: {isinstance(p, Cylinder)}")
+                    logging.info(f"p: {type(p) == Cylinder}")
                     if isinstance(p, Cylinder):
+                        logging.info(f"p.radius1: {p.radius1}")
                         if (p.radius1*2)>=min_diameter and (p.radius1*2)<=max_diameter:
                             is_candidate = True
                             props.append(dict(obj=s, prop=p))
+                            
 
                     elif isinstance(p,tuple(self.allow_type)) and isinstance(p,Cylinder) == False:
                         props.append(dict(obj=s, prop=p))

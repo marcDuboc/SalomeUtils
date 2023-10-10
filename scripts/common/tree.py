@@ -93,9 +93,9 @@ class TreeItem():
 class Tree:
 
     def __init__(self) -> None:
-        self.root = '0:1:1'
+        self.root = '0:1:2'
         self.objects = None
-        self.contact_pattern = re.compile(r"^_C[A-D]\d{1,4}[MS]$")
+        #self.contact_pattern = re.compile(r"^_C[A-D]\d{1,4}[MS]$")
 
     def _check_type(self, obj_sid:str):
         """
@@ -106,8 +106,8 @@ class Tree:
             return True,obj.GetShapeType()
 
         except:
-            return False,None,
-    
+            return False,None
+        
     def _is_group(self, obj_sid:str):	
         """
         return True if the object is a group
