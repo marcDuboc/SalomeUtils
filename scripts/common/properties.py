@@ -147,6 +147,57 @@ type_to_class = {
     "LINE": Segment,
 }
 
+
+def check_cylinder_direction(kos_list,obj):
+    """ Check if the cylinder is in the right direction. """
+
+    explode = Geompy.SubShapeAll(obj,GEOM.EDGE)
+    edges = [get_properties(e) for e in explode]
+
+    if any(isinstance(e,(Circle,ArcCircle)) for e in edges) == False:
+            return None
+        
+    if any(isinstance(e,Segment) for e in edges) == True:
+            return None
+    
+    else: 
+        origin_circles = []
+        for e in edges:
+            if isinstance(e,(Circle,ArcCircle)):
+                oc = e.origin.get_coordinate()
+                origin_circles.append(Point(*oc))
+        
+        vector_cylinder = Vector(*kos_list[3:6])
+        origin_cylinder = Point(*kos_list[0:3])
+        height_cylinder = kos_list[7]
+        radius_cylinder = kos_list[6]
+
+        # get the distance from the origin of the cylinder and the origin of the circles
+        d = [np.linalg.norm(o-origin_cylinder.get_coordinate()) for o in origin_circles]
+
+        # get the index of the min distance
+        po = np.argmin(d)
+        pc = np.argmax(d)
+
+        # get the extremty of the cylinder using the vector and cylinder origin
+        c1 = origin_cylinder.get_coordinate() + vector_cylinder.get_vector()*height_cylinder
+
+        # check if the extremty pc and ci are closed using np.isclose
+        if np.isclose(c1,origin_circles[pc].get_coordinate()).all():
+            return {"origin": origin_cylinder,
+                    "axis": vector_cylinder,
+                    "radius1": radius_cylinder,
+                    "height": height_cylinder,
+                    "kind": "CYLINDER"}
+        
+        else:
+            return {"origin": origin_cylinder,
+                    "axis": vector_cylinder*-1,
+                    "radius1": radius_cylinder,
+                    "height": height_cylinder,
+                    "kind": "CYLINDER"}
+
+
 def is_DiskCircle_or_DiskAnnular(obj):
     """
         Checks if the face is a disk annular.
@@ -224,14 +275,18 @@ def extract_properties(kos_list,obj):
             }
         
     elif kind in ("CYLINDER", "CYLINDER2D"):
-        return {
-            "origin": Point(*kos_list[0:3]),
-            "axis": Vector(*kos_list[3:6]),
-            "radius1": kos_list[6],
-            "height": kos_list[7],
-            "kind": kind
-        }
-    
+        test = check_cylinder_direction(kos_list,obj)
+        if test is not None:
+            return test
+        else:
+            return {
+                "origin": Point(*kos_list[0:3]),
+                "axis": Vector(*kos_list[3:6]),
+                "radius1": kos_list[6],
+                "height": kos_list[7],
+                "kind": kind
+            }
+
     elif kind in ("DISK", "DISK_CIRCLE"):
         return {
             "origin": Point(*kos_list[0:3]),
