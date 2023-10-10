@@ -1,3 +1,4 @@
+import numpy as np
 from .shape import VirtualBolt
 from common.properties import Point, Vector
 from common import logging
@@ -44,6 +45,13 @@ class MakeComm:
         CARA=('R', ),\n\
         VALE={bolt_radius}),\n"
         return afc
+    
+    @staticmethod
+    def str_pre_espi(ma_bolt:str, bolt_radius:float,  modulus:2.1e5):
+        epsi = -(np.pi*bolt_radius**2)/modulus
+        pre = f"\t_F(GROUP_MA={MakeComm._listNameToStrTuple(ma_bolt)},\n\
+        EPX = {epsi},)\n"
+        return pre
 
     @staticmethod
     def str_rbe3(no_slave, no_master):
@@ -52,7 +60,6 @@ class MakeComm:
         DDL_ESCL=('DX-DY-DZ',),\n\
         DDL_MAIT=('DX','DY','DZ','DRX','DRY','DRZ'),\n\
         COEF_ESCL=(1.0,)),\n"
-
         return rbe
     
     def process(self, bolts:list) -> str:
@@ -97,8 +104,7 @@ class MakeComm:
 
                 comm["LIAISON_RBE3"] += MakeComm.str_rbe3(grp_no_start, start_name)
 
-                comm["LIAISON_RBE3"] += MakeComm.str_rbe3(grp_no_end, 
-                                          end_name)
+                comm["LIAISON_RBE3"] += MakeComm.str_rbe3(grp_no_end, end_name)
                 
         comm["AFFE_MODELE"] += MakeComm.str_affe_model(grp_bolt_name)
 
