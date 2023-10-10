@@ -191,10 +191,13 @@ class ShapeCoincidence():
         e1 = cylinder.origin.get_coordinate()
         e2 = cylinder.origin.get_coordinate() + cylinder.axis.get_vector() * cylinder.height
 
+        logging.info(f"e1: {e1} \t e2: {e2}")
+        
         # get the closest surface from both extrmity
         s1n = [self.point_to_point_distance(e1, s.origin.get_coordinate()) for s in surfaces]
         s2n = [self.point_to_point_distance(e2, s.origin.get_coordinate()) for s in surfaces]
         
+        logging.info(f"s1n: {s1n} \t s2n: {s2n}")
 
         #check if the closest surface are not the same
         if len(s1n) > 0 and len(s2n) > 0:
@@ -203,7 +206,9 @@ class ShapeCoincidence():
             s1 = surfaces[np.argmin(s1n)]
             s2 = surfaces[np.argmin(s2n)]
 
-            if type(s1) in [DiskCircle, DiskAnnular] and type(s2) in [DiskCircle, DiskAnnular]:
+            logging.info(f"s1: {s1} \t s2: {s2}")
+
+            if isinstance(s1,(DiskCircle, DiskAnnular)) and isinstance(s2,(DiskCircle, DiskAnnular)):
                 # check if attribut radius2 is present and get the larger radius from  the two
 
                 s1_r = s1.radius1
@@ -300,6 +305,8 @@ class Parse():
         dist = ShapeCoincidence().point_to_point_distance(top_prop.origin.get_coordinate(),bot_prop.origin.get_coordinate())
         ratio = dist/(cylinder_prop.radius1*2)
 
+        logging.info(f"top_r: {top_r} \t bot_r: {bot_r} \t dist: {dist} \t ratio: {ratio}")
+
         if top_r >= cylinder_prop.radius1 and bot_r >= cylinder_prop.radius1:
             if ratio > self.NUT_RATIO_MINIMUM and ratio < self.NUT_RATIO_MAXIMUM and dist >= cylinder_prop.height:
                 axis = cylinder_prop.axis.get_vector()
@@ -327,26 +334,28 @@ class Parse():
     def is_nut_or_bolt(self,subshape: list):
 
         # 1. Extract all the cylinders from the subshapes
-        cylinders = [s for s in subshape if type(s['prop']) is Cylinder]
+        cylinders = [s for s in subshape if isinstance(s['prop'],Cylinder)]
         if not cylinders:
             return None
-        
+
         # 2. Get the longest cylinder which will be considered as the main body of the screw
         cylinder = sorted(cylinders, key=lambda k: k['prop'].height, reverse=True)[0]
-        
+        logging.info(f"cylinder: {cylinder['prop'].height} \t {cylinder['prop'].radius1}")
+
         # 3. Check all other shapes that might be connected to the cylinder (possible top/bottom surfaces or screw head)
         candidate_surfaces= []
         S = ShapeCoincidence()
         for s in subshape:
-            if type(s['prop']) in [Plane, DiskAnnular, DiskCircle]:
-                if S.are_axis_colinear(cylinder['prop'], s['prop']):
+            if isinstance(s['prop'],(Plane, DiskAnnular, DiskCircle)):
+                if S.are_axis_colinear(cylinder['prop'], s['prop'],tol_angle=0.01, tol_dist=0.01):
+                    logging.info(f"candidate: {s['prop']}")
                     candidate_surfaces.append(s)
         
         if candidate_surfaces is not None:
 
             # 4. Filter surfaces that are at the top and bottom of the cylinder
             top_surface, bottom_surface = S.closests_surfaces_from_cylinder_extremity(cylinder['prop'],[s['prop'] for s in candidate_surfaces])
-
+            logging.info(f"top_surface: {top_surface} \t bottom_surface: {bottom_surface}")
             if top_surface is not None or bottom_surface is not None:
 
                 obj = self._check_part_kind(cylinder['prop'],top_surface,bottom_surface)
@@ -447,6 +456,9 @@ class Parse():
 
     def parse_obj(self,obj_id:str, min_diameter:float=3, max_diameter:float=20, ):
         """function to extract kind of object"""
+
+        logging.info(f"obj_id: {obj_id}")
+
         obj = salome.IDToObject(obj_id)
 
         if obj is None:
@@ -465,11 +477,13 @@ class Parse():
             is_candidate = False
             for s in subshapes:
                     p = get_properties(s)
-                    if type(p) is Cylinder:
+
+                    if isinstance(p, Cylinder):
                         if (p.radius1*2)>=min_diameter and (p.radius1*2)<=max_diameter:
                             is_candidate = True
                             props.append(dict(obj=s, prop=p))
-                    elif type(p) in self.allow_type and type(p) is not Cylinder:
+
+                    elif isinstance(p,tuple(self.allow_type)) and isinstance(p,Cylinder) == False:
                         props.append(dict(obj=s, prop=p))
 
             if not is_candidate:
@@ -477,7 +491,7 @@ class Parse():
             
             else:
                 # first check with the number of cylinder
-                cyls = [s['prop'] for s in props if type(s['prop']) is Cylinder]
+                cyls = [s['prop'] for s in props if isinstance(s['prop'],Cylinder)]
                 cyls = list(set(cyls))
                 
                 if len(cyls) < 3:

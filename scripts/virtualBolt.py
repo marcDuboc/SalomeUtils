@@ -22,14 +22,14 @@ from PyQt5.QtWidgets import QDockWidget,QMessageBox
 from importlib import reload
 
 try:
-    modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster','common.bolt.bgui.mainwin']
+    modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster','common.bolt.bgui.mainwin','common']
     for m in modules:
         if m in sys.modules:
             reload(sys.modules[m])
 
     from common.bolt.bgui.mainwin import BoltGUI
     from common.bolt.treeBolt import TreeBolt
-    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads,pair_holes , create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
+    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
     from common.properties import get_properties
     from common.bolt.aster import MakeComm
     from common import logging
@@ -153,7 +153,7 @@ class Bolt1D(QObject):
         lines_ids = []
 
         self.parse_progess.emit(0)
-        #logging.info(f"compound_id: {self.compound_id}")
+        logging.info(f"compound_id: {self.compound_id}")
         if self.compound_id:
             #get the parts from the compound
             self.Tree.parse_tree_objects(self.compound_id)
@@ -181,6 +181,10 @@ class Bolt1D(QObject):
                             threads.append(e)
 
                 self.parse_progess.emit(progress)
+
+                logging.info(f"nuts: {nuts}")
+                logging.info(f"screws: {screws}")
+                logging.info(f"threads: {threads}")
 
             if Method.SCREW == method:
                 connections = pair_screw_nut_threads(screws,nuts,threads,tol_angle=tol_axis, tol_dist=tol_dist)
@@ -223,7 +227,7 @@ class Bolt1D(QObject):
             self.Gui.set_data(b_list)
 
             # delete parts
-            delete=True
+            delete=False
             if delete:
                 for grp in parts_to_delete:
                     Gst.removeFromStudy(grp)
