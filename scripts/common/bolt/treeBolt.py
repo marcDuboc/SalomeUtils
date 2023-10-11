@@ -17,7 +17,7 @@ from common.bolt.shape import VirtualBolt
 class TreeBolt(Tree):
     bolt_pattern = re.compile(r'_B\d{1,3}(_-?\d+(\.\d+)?)+')
 
-    def parse_for_bolt_folder(self,root, folder_name:str):
+    def get_bolt_folder(self,root, folder_name:str):
         """
         if exist return the bolt folder sid
         """
@@ -25,7 +25,8 @@ class TreeBolt(Tree):
         if self.objects is None:
             self.parse_tree_objects(self.root)
 
-        for obj in self.objects:
+        for obj in self.study_objects:
+            logging.debug(f"get_bolt_folder: {obj.name} {obj.get_sid()}")
             if obj.name == folder_name:
                 return obj.get_sid()
             

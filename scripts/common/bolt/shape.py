@@ -1,4 +1,5 @@
 
+import sys
 import numpy as np
 from itertools import combinations,product
 from enum import Enum
@@ -11,7 +12,7 @@ Gg = salome.ImportComponentGUI("GEOM")
 # Detect current study
 Geompy = geomBuilder.New()
 salome.salome_init()
-
+   
 from common.properties import get_properties, Point, Vector, Cylinder, Plane, DiskCircle, DiskAnnular
 from common import logging
 
@@ -115,6 +116,9 @@ class VirtualBolt():
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def __del__(self):
+        VirtualBolt.ids_used.remove(self.id_instance)
+        VirtualBolt.ids_available.append(self.id_instance)
 
     def __repr__(self) -> str:
         return f"VirtualBolt({self.id_instance}, {self.start}, {self.end}, {self.radius}, {self.start_radius}, {self.start_height}, {self.end_radius}, {self.end_height}, {self.preload})"

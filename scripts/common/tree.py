@@ -90,11 +90,26 @@ class TreeItem():
     def __repr__(self):
         return f"TreeItem(id={self.id},name={self.name},type={self.type},is_group={self.is_group})"
 
+class StudyItem():
+    def __init__(self,id:tuple,name:str):
+        self.id = id
+        self.name = name
+
+    def parent_id(self):
+        return self.id[:-1]
+    
+    def get_sid(self):
+        return tuple_to_id(self.id)
+    
+    def __repr__(self):
+        return f"TreeItem(id={self.id},name={self.name})"
+
 class Tree:
 
     def __init__(self) -> None:
-        self.root = '0:1:2'
+        self.root = None
         self.objects = None
+        self.study_objects = None
         #self.contact_pattern = re.compile(r"^_C[A-D]\d{1,4}[MS]$")
 
     def _check_type(self, obj_sid:str):
@@ -123,7 +138,6 @@ class Tree:
         """
         retrun a list of tree items within the compound_id
         """
-
         if component is not None:
             self.root=component
 
@@ -131,9 +145,10 @@ class Tree:
         length_compound_id = len(compound_id)
 
         objects = list()
+        sobjects = list()
         component= salome.myStudy.FindComponentID(self.root)
         iter = salome.myStudy.NewChildIterator(component)
-        iter.InitEx(True) # init recursive mode
+         # init recursive mode
 
         while iter.More():
             sobj = iter.Value()
@@ -148,10 +163,15 @@ class Tree:
                     item=TreeItem(id,sobj.GetName(),obj_type)
                     item.is_group = self._is_group(sobj.GetID())
                     objects.append(item)
+                else:
+                    sitem=StudyItem(id,sobj.GetName())
+                    sobjects.append(sitem)
             iter.Next()
             
         self.objects = objects
+        self.study_objects = sobjects
         return objects
+
     
     def get_parts(self,type=[GEOM.SOLID,GEOM.SHELL], include_groups=False):
         """

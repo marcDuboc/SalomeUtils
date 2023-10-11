@@ -19,11 +19,11 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt, QVariant
 from PyQt5.QtWidgets import QDockWidget,QMessageBox
 
 #for debbuging
-DEBUG = True
-from importlib import reload
+DEBUG = False
 
 try:
     if DEBUG:
+        from importlib import reload 
         modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster','common.bolt.bgui.mainwin','common']
         for m in modules:
             if m in sys.modules:
@@ -56,6 +56,7 @@ Geompy = geomBuilder.New()
 
 class Bolt1D(QObject):
     pattern_bolt = re.compile(r'_B\d{1,3}(_-?\d+(\.\d+)?)+')
+    vb_folder_name = "Virtual Bolts"
 
     parts_selected = pyqtSignal(str,str)
     root_selected = pyqtSignal(str,str)
@@ -68,6 +69,8 @@ class Bolt1D(QObject):
         self.Tree = TreeBolt()
         self.Parse= Parse()
         self.roots =None
+        self.vb_folder_sid = None
+        self.bolts = None
 
         self.parts_id =[]
         self.compound_id = None
@@ -75,9 +78,16 @@ class Bolt1D(QObject):
         self.connect()
 
     def __del__(self):
+        self.delete_all_virtual_bolt()
         del self.Tree
         del self.Parse
         del self.Gui
+
+    def delete_all_virtual_bolt(self):
+        logging.info("delete_all_virtual_bolt")
+        for b in self.bolts:
+            del b
+        self.bolts = None
     
     def virtual_bolt_to_table(self):
         bolt_array= []
@@ -125,6 +135,9 @@ class Bolt1D(QObject):
                 name = salome.IDToSObject(self.roots).GetName()
                 self.root_selected.emit(f"{name} {id}","green")
                 self.get_existing_bolt(self.roots)
+
+                #get the virtual bolt folder sid
+                self.vb_folder_sid = self.Tree.get_bolt_folder(self.roots,self.vb_folder_name)
             else:
                 self.root_selected.emit("Selected a component !","red")
                 
@@ -140,8 +153,9 @@ class Bolt1D(QObject):
         
         elif selCount == 1:
             id = salome.sg.getSelected(0)
-            if len(id_to_tuple(id)) > 3:
-                obj = salome.IDToObject(id)
+            obj = salome.IDToObject(id)
+
+            if "GetShapeType" in dir(obj):
                 otype = obj.GetShapeType()
 
                 if otype == GEOM.COMPOUND:
@@ -156,10 +170,12 @@ class Bolt1D(QObject):
             for s in range(selCount):
                 id = salome.sg.getSelected(s)
                 obj = salome.IDToObject(id)
-                otype = obj.GetShapeType()
 
-                if otype in (GEOM.SOLID, GEOM.SHELL):
-                    parts_id.append(id)
+                if "GetShapeType" in dir(obj):
+                    otype = obj.GetShapeType()
+
+                    if otype in (GEOM.SOLID, GEOM.SHELL):
+                        parts_id.append(id)
                 
             if parts_id:
                 self.parts_id = parts_id
@@ -236,14 +252,18 @@ class Bolt1D(QObject):
                 if not v_bolt is None:
                     v_bolts.append(v_bolt)
                     for p in threads:
-                        if type(p) == Screw:
+                        if isinstance(p,Screw):
                                 parts_to_delete.append(p.part_id)
 
             # build geom in salome
             for v_bolt in v_bolts:
                 lines_ids.append(create_salome_line(v_bolt))
 
-            vbf= Geompy.NewFolder('Virtual Bolts')
+            if self.vb_folder_sid is None:
+                vbf= Geompy.NewFolder(self.vb_folder_name)
+                self.vb_folder_sid = vbf.GetID()
+            else:
+                vbf = salome.IDToSObject(self.vb_folder_sid)
             Geompy.PutListToFolder(lines_ids, vbf)
 
             # add virtual bolts to table
