@@ -11,7 +11,7 @@ import GEOM
 from common import logging
 from common.tree import Tree, ObjectType
 from common.properties import get_properties
-from .shape import VirtualBolt
+from common.bolt.shape import VirtualBolt
 
 
 class TreeBolt(Tree):
@@ -40,8 +40,11 @@ class TreeBolt(Tree):
         bolts = []
         if self.objects is None:
             self.parse_tree_objects(self.root)
-        
+
+        logging.debug(f"parse_for_bolt: {self.objects}")
+
         for obj in self.objects:
+            
             if self.bolt_pattern.search(obj.name):
                 name = obj.name
                 sid = obj.get_sid()
