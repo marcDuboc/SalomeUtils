@@ -17,10 +17,11 @@ from .shape import VirtualBolt
 class TreeBolt(Tree):
     bolt_pattern = re.compile(r'_B\d{1,3}(_-?\d+(\.\d+)?)+')
 
-    def parse_for_bolt_folder(self, folder_name:str):
+    def parse_for_bolt_folder(self,root, folder_name:str):
         """
         if exist return the bolt folder sid
         """
+        self.root=root
         if self.objects is None:
             self.parse_tree_objects(self.root)
 
@@ -31,10 +32,11 @@ class TreeBolt(Tree):
         return None
     
 
-    def parse_for_bolt(self):
+    def parse_for_bolt(self,root):
         """
         return a list of virtual bolt
         """
+        self.root=root
         bolts = []
         if self.objects is None:
             self.parse_tree_objects(self.root)

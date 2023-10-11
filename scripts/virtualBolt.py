@@ -28,6 +28,7 @@ try:
             reload(sys.modules[m])
 
     from common.bolt.bgui.mainwin import BoltGUI
+    from common.tree import id_to_tuple
     from common.bolt.treeBolt import TreeBolt
     from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
     from common.properties import get_properties
@@ -40,6 +41,7 @@ except:
     sys.path.append(script_directory)
 
     from common.bolt.bgui.mainwin import BoltGUI
+    from common.tree import id_to_tuple
     from common.bolt.treeBolt import TreeBolt
     from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
     from common.properties import get_properties
@@ -54,7 +56,7 @@ class Bolt1D(QObject):
     pattern_bolt = re.compile(r'_B\d{1,3}(_-?\d+(\.\d+)?)+')
 
     parts_selected = pyqtSignal(str,str)
-
+    root_selected = pyqtSignal(str,str)
     parse_progess = pyqtSignal(int)
     parse_completed = pyqtSignal()
 
@@ -63,18 +65,12 @@ class Bolt1D(QObject):
         self.Gui = BoltGUI()
         self.Tree = TreeBolt()
         self.Parse= Parse()
-        self.roots ="0:1:1"
+        self.roots =None
 
         self.parts_id =[]
         self.compound_id = None
 
         self.connect()
-
-        # get the existing virtual bolts
-        self.bolts = self.Tree.parse_for_bolt()
-        if self.bolts:
-            b_list = self.virtual_bolt_to_table()
-            self.Gui.set_data(b_list)
 
     def __del__(self):
         del self.Tree
@@ -95,20 +91,46 @@ class Bolt1D(QObject):
 
         return bolt_array
 
+    def get_existing_bolt(self,roots):
+        # get the existing virtual bolts
+        self.bolts = self.Tree.parse_for_bolt(roots)
+        if self.bolts:
+            b_list = self.virtual_bolt_to_table()
+            self.Gui.set_data(b_list)
+
     # signal slots connection =================================================
     def connect(self):
         self.Gui.select.connect(self.select)
         self.parts_selected.connect(self.Gui.on_selection)
         self.Gui.parse.connect(self.parse_selected)
         self.parse_progess.connect(self.Gui.on_progress)
+        self.Gui.select_root.connect(self.on_root_select)
+        self.root_selected.connect(self.Gui.on_root_selection)
 
-    # Slot ====================================================================          
+    # Slot ====================================================================
+    
+    @pyqtSlot()
+    def on_root_select(self):
+        logging.info("on_root_select")
+        selCount = salome.sg.SelectedCount()
+        if selCount != 1:
+            self.root_selected.emit("Selected a component !","red")
+        else:
+            id = salome.sg.getSelected(0)
+            logging.info(f"selected id: {id}")
+            if len(id_to_tuple(id)) == 3:
+                self.roots = id
+                name = salome.IDToSObject(self.roots).GetName()
+                self.root_selected.emit(f"{name} {id}","green")
+                self.get_existing_bolt(self.roots)
+            else:
+                self.root_selected.emit("Selected a component !","red")
+                
     @pyqtSlot()
     def select(self):
         self.parts=[]
         self.compound_id = None
         selCount = salome.sg.SelectedCount()
-        #logging.info(f"selected count: {selCount}") 
 
         if selCount == 0:
             self.parts_selected.emit("No compound or parts selected!","red")
@@ -116,15 +138,16 @@ class Bolt1D(QObject):
         
         elif selCount == 1:
             id = salome.sg.getSelected(0)
-            obj = salome.IDToObject(id)
-            otype = obj.GetShapeType()
+            if len(id_to_tuple(id)) > 3:
+                obj = salome.IDToObject(id)
+                otype = obj.GetShapeType()
 
-            if otype == GEOM.COMPOUND:
-                self.parts_selected.emit(obj.GetName()+ '\t'+ id,"green")
-                self.compound_id = id
-              
-            elif otype in (GEOM.SOLID, GEOM.SHELL):
-                self.parts_selected.emit("select at least 2 parts (solid or shell) or a compound","red")
+                if otype == GEOM.COMPOUND:
+                    self.parts_selected.emit(obj.GetName()+ '\t'+ id,"green")
+                    self.compound_id = id
+                
+                elif otype in (GEOM.SOLID, GEOM.SHELL):
+                    self.parts_selected.emit("select at least 2 parts (solid or shell) or a compound","red")
 
         elif selCount > 1:
             parts_id =[]

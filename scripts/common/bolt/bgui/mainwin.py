@@ -21,7 +21,8 @@ class BoltGUI(QWidget):
     # define custom signals
     select = pyqtSignal()
     parse = pyqtSignal(QVariant,float,float,float,float)
-
+    select_root = pyqtSignal()
+    
     closing = pyqtSignal()
     export_contact = pyqtSignal(str,str,bool)
 
@@ -45,7 +46,19 @@ class BoltGUI(QWidget):
         self.table_view.setItemDelegateForColumn(7, self.deleteItem)
         #self.table_view.setItemDelegateForColumn(6, self.swapItem)
         #self.table_view.setItemDelegateForColumn(5, self.hideShowItem)
-                
+        
+        # creatre group box for root selection
+        self.gp_root = QGroupBox("Root", self)
+        self.le_root = QLineEdit()
+        self.le_root.setReadOnly(True)
+        self.le_root.setText("select root component")
+        self.bt_root = QPushButton()
+        self.bt_root.setIcon(QIcon(os.path.join(IMG_PATH,'input.png')))
+        self.hbox_root = QHBoxLayout()
+        self.hbox_root.addWidget(self.bt_root)
+        self.hbox_root.addWidget(self.le_root)
+        self.gp_root.setLayout(self.hbox_root)
+
         #=======================
         # group for contact creation
         self.gp_bolt = QGroupBox("Search Bolt", self)
@@ -223,27 +236,34 @@ class BoltGUI(QWidget):
         # create button OK	
         btnQuit = QPushButton('Quit')
 
-
         #=======================
         # layout
         layout = QGridLayout()
+        layout.addWidget(self.gp_root, 0, 0, 1, 2)
         layout.addWidget(self.table_view, 1, 0, 1, 2)
-        layout.addWidget(self.gp_bolt, 3, 0, 1, 2)
-        layout.addWidget(self.gp_export, 4, 0, 1, 2)
-        layout.addWidget(btnQuit, 5, 1)
+        layout.addWidget(self.gp_bolt, 2, 0, 1, 2)
+        layout.addWidget(self.gp_export, 3, 0, 1, 2)
+        layout.addWidget(btnQuit, 4, 0, 1, 1)
         self.setLayout(layout)
 
         # connect signals
         self.bt_input.clicked.connect(self.select.emit)
         self.bt_search.clicked.connect(self.on_search)
+        self.bt_root.clicked.connect(self.select_root.emit)
 
         self.bt_export.clicked.connect(self.select_file)
         self.cb_export_json.stateChanged.connect(self.on_change_export_json)
         self.gp_export_comm.toggled.connect(self.on_change_export_comm)
         btnQuit.clicked.connect(self.close)
 
-        
+
     # slots
+    @pyqtSlot(str,str)
+    def on_root_selection(self, root_name, color='black'):
+        self.le_root.setText(root_name)
+        self.le_root.setStyleSheet(f"color: {color};")
+
+
     @pyqtSlot(str,str)
     def on_selection(self, master_compound_name, color='black'):
         self.le_input.setText(master_compound_name)
