@@ -8,8 +8,7 @@ import os
 import sys
 import inspect
 import re
-import itertools
-import time
+import json
 import GEOM
 import salome
 from salome.kernel.studyedit import getStudyEditor
@@ -112,12 +111,16 @@ class Bolt1D(QObject):
 
     # signal slots connection =================================================
     def connect(self):
+        # GUI => APP
         self.Gui.select.connect(self.select)
-        self.parts_selected.connect(self.Gui.on_selection)
         self.Gui.parse.connect(self.parse_selected)
-        self.parse_progess.connect(self.Gui.on_progress)
         self.Gui.select_root.connect(self.on_root_select)
+        self.Gui.export_bolt.connect(self.write_files)
+        # APP => GUI
+        self.parts_selected.connect(self.Gui.on_selection)
+        self.parse_progess.connect(self.Gui.on_progress)
         self.root_selected.connect(self.Gui.on_root_selection)
+        
 
     # Slot ====================================================================
     
@@ -297,9 +300,22 @@ class Bolt1D(QObject):
             self.compound_id = None
             self.parts_selected.emit("select a compound or several parts","black")
   
+    @pyqtSlot(str,str)
+    def write_files(self,file:str,export:str):
+        if self.bolts:
+            if export=="ASTER":
+                comm = MakeComm()
+                data = comm.process(self.bolts)
+                str_data = comm.to_str(data)
+                with open(file, 'w') as f:
+                    f.write(str_data)
+                
+            elif export=="RAW":
+                with open(file, 'w') as f:
+                    json.dump(self.bolts, f, default=lambda o: o.__dict__, indent=4)
+
 class MyDockWidget(QDockWidget):
     widgetClosed = pyqtSignal()
-
     def closeEvent(self, event):
         self.widgetClosed.emit()
         super(MyDockWidget, self).closeEvent(event)

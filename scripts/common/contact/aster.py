@@ -211,15 +211,13 @@ class MakeComm:
         # master as [m1,m2,...] to m as ('m1','m1',...)
         m = MakeComm._listNameToStrTuple(master)
         s = MakeComm._listNameToStrTuple(slave)
-        return "_F(ALGO_CONT='PENALISATION',\n\t\t ADAPTATION='CYCLAGE',\n\t\t COEF_PENA_CONT=1.5E12,\n\t\t APPARIEMENT='MAIT_ESCL',\n\t\t NORMALE='MAIT',\n\t\t CONTACT_INIT='INTERPENETRE',\n\t\t GROUP_MA_ESCL=('{}'),\n\t\t GROUP_MA_MAIT=('{}')),".format(slave,master)  
+        return f"_F(ALGO_CONT='STANDARD',\n\t\t APPARIEMENT='MAIT_ESCL',\n\t\t NORMALE='MAIT',\n\t\t CONTACT_INIT='OUI',\n\t\t GROUP_MA_ESCL=('{slave}'),\n\t\t GROUP_MA_MAIT=('{master}')),"
     
     def strFFriction(self,master,slave):
         # master as [m1,m2,...] to m as ('m1','m1',...)
         m = MakeComm._listNameToStrTuple(master)
         s = MakeComm._listNameToStrTuple(slave)
-        coulomb = 0.5
-        e_t= 10000
-        return "_F(GROUP_MA_ESCL=('{}'),\n\t\t GROUP_MA_MAIT=('{}'),\n\t\t COULOMB={},\n\t\t E_T ={},),".format(slave,master,coulomb,e_t)  
+        return f"_F(ALGO_CONT='STANDARD',\n\t\t APPARIEMENT='MAIT_ESCL',\n\t\t NORMALE='MAIT',\n\t\t CONTACT_INIT='OUI',\n\t\t GROUP_MA_ESCL=('{slave}'),\n\t\t GROUP_MA_MAIT=('{master}')),"  
     
     def regroupMasterbySlave(self, contacts:list):
         masterSalveId = defaultdict(list)

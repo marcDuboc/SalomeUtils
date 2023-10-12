@@ -62,14 +62,28 @@ class MakeComm:
         COEF_ESCL=(1.0,)),\n"
         return rbe
     
+    @staticmethod
+    def str_post_releve_t(ma_bolt:str):
+        post = f"GROUP_NO=('{ma_bolt}', ),\n\
+        INTITULE='{ma_bolt}',\n\
+        NOM_CHAM='SIEF_ELNO',\n\
+        OPERATION=('EXTRACTION', ),\n\
+        RESULTAT=BOLTS,\n\
+        TOUT_CMP='OUI',\n\
+        TOUT_ORDRE='OUI'),\n"
+        return post
+    
     def process(self, bolts:list) -> str:
         comm = dict(CREA_GROUP_NO="", 
                     AFFE_MODELE="",
                     AFFE_CARA_ELEM="" , 
-                    LIAISON_RBE3="")
+                    LIAISON_RBE3="",
+                    CALC_CHAMP="",
+                    POST_RELEVE_T="",)
         grp_bolt_name=[]
+
         for bolt in bolts:
-            if type(bolt) is VirtualBolt:
+            if isinstance(bolt,VirtualBolt):
 
                 # group name
                 ma_bolt = bolt.get_bolt_name()
@@ -109,6 +123,14 @@ class MakeComm:
         comm["AFFE_MODELE"] += MakeComm.str_affe_model(grp_bolt_name)
 
         return comm
+    
+    def to_str(self, comm:dict) -> str:
+        str_comm = ""
+        for key, value in comm.items():
+            str_comm += f"# {key}==========================\n"
+            str_comm += f"{key} = {value}\n\n"
+            
+        return str_comm
     
 
 

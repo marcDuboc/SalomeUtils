@@ -24,7 +24,7 @@ class BoltGUI(QWidget):
     select_root = pyqtSignal()
     
     closing = pyqtSignal()
-    export_contact = pyqtSignal(str,str,bool)
+    export_bolt = pyqtSignal(str,str)
 
     def __init__(self):
         super(BoltGUI, self).__init__()
@@ -304,7 +304,7 @@ class BoltGUI(QWidget):
             else:
                 export = 'RAW'
                 
-            self.export_contact.emit(name,export,self.cb_export_aster_regroup.isChecked())
+            self.export_bolt.emit(name,export)
 
     @pyqtSlot(int)
     def on_change_export_json(self):

@@ -10,7 +10,7 @@ from salome.geom import geomBuilder,geomtools
 from PyQt5.QtWidgets import QWidget, QMessageBox
 from PyQt5 import QtCore, QtGui
 import PyQt5.QtCore as QtCore
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QLineEdit, QCheckBox, QGridLayout, QLabel, QTextBrowser, QPushButton, QDialogButtonBox, QDockWidget
 from PyQt5.QtCore import Qt
 
 geompy = geomBuilder.New()
@@ -27,23 +27,15 @@ class Rename(QWidget):
     def __del__(self):
         return
     
-    # get object => IDL:SALOMEDS/SObject:1.0
-    def get_SALOMEDS_SObject(self,id):
-        return geomtools.IDToSObject(id)
-    
-    # get object => IDL:GEOM/GEOM_Object:1.0
-    def get_GEOM_Object(self,id):
-        return salome.myStudy.FindObjectID(id).GetObject()
-    
     def renameObject(self, id, name):
-        obj = self.get_GEOM_Object(id)
-        sobj=self.get_SALOMEDS_SObject(id)
+        obj = salome.IDToObject(id)
+        sobj=salome.IDToSObject(id)
         obj.SetName(name)
         self.study.editor.setName(sobj, name)
         
     def getPartsName(self,id):
-        sobj=geomtools.IDToSObject(id)
-        return self.study.editor.getName(sobj)
+        sobj=salome.IDToSObject(id)
+        return sobj.GetName()
     
     def initUI(self):
         # parts selected 
@@ -85,11 +77,11 @@ class Rename(QWidget):
         self.pb_loadpart.clicked.connect(self.selectParts)
         
     def selectParts(self):
-        try:
-          selCount = salome.sg.SelectedCount()
-          selID = list()
-          self.tb_parts.clear()
+        self.tb_parts.clear()
+        selCount = salome.sg.SelectedCount()
+        selID = list()
 
+        try:
           for i in range(0, selCount):
             id=salome.sg.getSelected(i)
             selID.append(id)
@@ -119,22 +111,24 @@ class Rename(QWidget):
         # create group
         if self.make_grp.isChecked():
           try:
-            goemObj = self.get_GEOM_Object(self.partsID[i])
+            goemObj = salome.IDToObject(self.partsID[i])
             solid_grp = geompy.SubShapeAll(goemObj, geompy.ShapeType["SOLID"])
 
             if len(solid_grp)>0:
               group = geompy.CreateGroup(goemObj, geompy.ShapeType["SOLID"])
               SolidID = geompy.GetSubShapeID(goemObj, solid_grp[0])
               geompy.AddObject(group, SolidID)
-              id_group = geompy.addToStudyInFather( goemObj, group, name )
-
+              geompy.addToStudyInFather( goemObj, group, name )
 
           except:
             QMessageBox.critical(None,'Error',"error creating group",QMessageBox.Ok)
 
       if salome.sg.hasDesktop():
         salome.sg.updateObjBrowser()
-	  
+        QMessageBox.information(None,'Information',str(len(self.partsID))+" parts renamed",QMessageBox.Ok)
+        self.close()
+
+
     # cancel function
     def cancel(self):
         self.close()
