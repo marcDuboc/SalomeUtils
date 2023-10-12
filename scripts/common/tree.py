@@ -138,21 +138,30 @@ class Tree:
         """
         retrun a list of tree items within the compound_id
         """
-        if component is not None:
-            self.root=component
 
         compound_id = id_to_tuple(compound_id)
         length_compound_id = len(compound_id)
 
+        if component is not None:
+            self.root=component
+
+        else:
+            self.root=tuple_to_id(compound_id[:3])
+
+        logging.debug(f"root: {self.root} {tuple_to_id(compound_id)}")
+
         objects = list()
         sobjects = list()
-        component= salome.myStudy.FindComponentID(self.root)
-        iter = salome.myStudy.NewChildIterator(component)
-         # init recursive mode
+
+        cmp= salome.myStudy.FindComponentID(self.root)
+        iter = salome.myStudy.NewChildIterator(cmp)
+        iter.InitEx(True) # init recursive mode
 
         while iter.More():
             sobj = iter.Value()
             id = id_to_tuple(sobj.GetID()) 
+
+            logging.debug(f"parse_tree_objects: {id} {compound_id} {length_compound_id}")
 
             # check if the object is whithin the main object
             test_id = id[:length_compound_id]
@@ -170,6 +179,7 @@ class Tree:
             
         self.objects = objects
         self.study_objects = sobjects
+        logging.debug(f"parse_tree_objects: {self.objects}")
         return objects
 
     
