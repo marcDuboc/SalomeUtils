@@ -161,7 +161,7 @@ class Tree:
             sobj = iter.Value()
             id = id_to_tuple(sobj.GetID()) 
 
-            logging.debug(f"parse_tree_objects: {id} {compound_id} {length_compound_id}")
+            #logging.debug(f"parse_tree_objects: {id} {compound_id} {length_compound_id}")
 
             # check if the object is whithin the main object
             test_id = id[:length_compound_id]
@@ -179,7 +179,7 @@ class Tree:
             
         self.objects = objects
         self.study_objects = sobjects
-        logging.debug(f"parse_tree_objects: {self.objects}")
+        #logging.debug(f"parse_tree_objects: {self.objects}")
         return objects
 
     

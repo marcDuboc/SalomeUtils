@@ -383,7 +383,7 @@ class Parse():
         threads=[]
         candidate=[]
         for s in subshape:
-            if type(s['prop']) is Cylinder:
+            if isinstance(s['prop'],Cylinder):
                 if (s['prop'].height/(s['prop'].radius1*2)) > self.THREAD_RATIO_MINIMUM:
                     candidate.append(s['prop'])
 
@@ -408,7 +408,7 @@ class Parse():
     def parse_obj(self,obj_id:str, min_diameter:float=3, max_diameter:float=20, ):
         """function to extract kind of object"""
 
-        logging.info(f"obj_id: {obj_id}")
+        #logging.info(f"obj_id: {obj_id}")
 
         obj = salome.IDToObject(obj_id)
 
@@ -428,11 +428,7 @@ class Parse():
             is_candidate = False
             for s in subshapes:
                     p = get_properties(s)
-                    logging.info(f"p: {p}")
-                    logging.info(f"p: {isinstance(p, Cylinder)}")
-                    logging.info(f"p: {type(p) == Cylinder}")
                     if isinstance(p, Cylinder):
-                        logging.info(f"p.radius1: {p.radius1}")
                         if (p.radius1*2)>=min_diameter and (p.radius1*2)<=max_diameter:
                             is_candidate = True
                             props.append(dict(obj=s, prop=p))

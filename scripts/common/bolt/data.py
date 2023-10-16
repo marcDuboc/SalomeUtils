@@ -5,6 +5,7 @@
 # Version: 16/10/2023
 
 import numpy as np
+from common import logging
 
 class VirtualBoltMaterial():
     E  = 2.1e5 # N/mm2
@@ -33,6 +34,7 @@ class VirtualBolt():
     ids_available=[x for x in range(1,1000)]
 
     def __init__(self,id=None ,*args, **kwargs):
+        setattr(self,'sid', None)
 
         if id in VirtualBolt.ids_available:
             setattr(self,'id_instance',id)
@@ -45,7 +47,7 @@ class VirtualBolt():
 
         # add preload
         setattr(self,'preload', 0.0)
-
+        
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -56,8 +58,11 @@ class VirtualBolt():
         return False
 
     def __del__(self):
+        logging.debug(f"deleting bolt {self.id_instance}")
         VirtualBolt.ids_used.remove(self.id_instance)
+        logging.debug(f"ids used: {VirtualBolt.ids_used}")
         VirtualBolt.ids_available.append(self.id_instance)
+        
 
     def __repr__(self) -> str:
         return f"VirtualBolt({self.id_instance}, {self.start}, {self.end}, {self.radius}, {self.start_radius}, {self.start_height}, {self.end_radius}, {self.end_height}, {self.preload})"
@@ -85,6 +90,10 @@ class BoltsManager():
     def __init__(self):
         self.bolts = []
 
+    def __del__(self):
+        for b in self.bolts:
+            del b
+
     def add_bolt(self, bolt_prop:dict, id:int=None):
         self.bolts.append(VirtualBolt(id=id, **bolt_prop))
         return self.bolts[-1].id_instance
@@ -95,12 +104,12 @@ class BoltsManager():
                 return bolt
         return None
     
-    def delete_bolt(self, id:int):
-        for i,bolt in enumerate(self.bolts):
+    def remove_bolt(self, id:int):
+        for idx,bolt in enumerate(self.bolts):
             if bolt.id_instance == id:
-                del bolt
-                del self.bolts[i]
-                return
+                sid = bolt.sid
+                del self.bolts[idx]
+                return sid
         return None
     
     def update_bolt(self, id:int, bolt_prop:dict):

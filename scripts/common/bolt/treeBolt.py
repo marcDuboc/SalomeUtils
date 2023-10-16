@@ -26,7 +26,6 @@ class TreeBolt(Tree):
             self.parse_tree_objects(self.root)
 
         for obj in self.study_objects:
-            logging.debug(f"get_bolt_folder: {obj.name} {obj.get_sid()}")
             if obj.name == folder_name:
                 return obj.get_sid()
             
@@ -41,8 +40,6 @@ class TreeBolt(Tree):
         if self.objects is None:
             self.parse_tree_objects(self.root)
 
-        logging.debug(f"parse_for_bolt: {self.objects}")
-
         for obj in self.objects:
             
             if self.bolt_pattern.search(obj.name):
@@ -50,20 +47,20 @@ class TreeBolt(Tree):
                 sid = obj.get_sid()
 
                 isValid, gtype = self._check_type(sid)
-                logging.debug(f"parse_for_bolt: {isValid} {name} {sid} {gtype} {type(GEOM.EDGE)}")
+                
                 if isValid and gtype == GEOM.EDGE:
-                    logging.debug(f"create_bolt: {name} {sid}")
                     prop = get_properties(salome.IDToObject(sid))
                     data= name.split('_')
                     data= data[1:]
                     id = int(data[0][1:])
                     bolt_properties = { 
+                                        'sid': sid,
                                         'start': prop.p1,
                                         'end': prop.p2,
                                         'radius': float(data[1]),
                                         'start_radius': float(data[2]),
-                                        'start_height': float(data[3]),
-                                        'end_radius': float(data[4]),
+                                        'end_radius': float(data[3]),
+                                        'start_height': float(data[4]),
                                         'end_height': float(data[5]),
                                         'preload': float(data[6]),
                                     }

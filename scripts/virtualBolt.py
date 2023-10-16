@@ -9,7 +9,6 @@ import sys
 import inspect
 import re
 import json
-import pickle
 import GEOM
 import salome
 from salome.kernel.studyedit import getStudyEditor
@@ -24,7 +23,7 @@ DEBUG = True
 try:
     if DEBUG:
         from importlib import reload 
-        modules = ['common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster','common.bolt.bgui.mainwin','common']
+        modules = ['common.tree','common.bolt.shape', 'common.bolt.treeBolt', 'common.properties','common.bolt.aster','common.bolt.data','common.bolt.bgui.mainwin','common']
         for m in modules:
             if m in sys.modules:
                 reload(sys.modules[m])
@@ -32,7 +31,7 @@ try:
     from common.bolt.bgui.mainwin import BoltGUI
     from common.tree import id_to_tuple
     from common.bolt.treeBolt import TreeBolt
-    from common.bolt.data import BoltsManager
+    from common.bolt.data import BoltsManager,VirtualBolt
     from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread
     from common.properties import *
     from common.bolt.aster import MakeComm
@@ -82,17 +81,11 @@ class Bolt1D(QObject):
         self.connect()
 
     def __del__(self):
-        self.delete_all_virtual_bolt()
+        del self.BoltsMgt
         del self.Tree
         del self.Parse
         del self.Gui
-
-    def delete_all_virtual_bolt(self):
-        logging.info("delete_all_virtual_bolt")
-        for b in self.BoltsMgt.bolts:
-            del b
-        self.bolts = None
-    
+        
     def virtual_bolt_to_table(self):
         bolt_array= []
         for b in self.BoltsMgt.bolts:
@@ -164,7 +157,6 @@ class Bolt1D(QObject):
         self.parse_progess.connect(self.Gui.on_progress)
         self.root_selected.connect(self.Gui.on_root_selection)
         
-
     # Slot ====================================================================
     @pyqtSlot()
     def on_root_select(self):
@@ -303,7 +295,10 @@ class Bolt1D(QObject):
             # build geom in salome
             for id in new_bolts_id:
                 b = self.BoltsMgt.get_bolt(id)
-                lines_ids.append(self.create_salome_line(b))
+                sbolt = self.create_salome_line(b)
+                logging.debug(f"sbolt: {dir(sbolt)}")
+                b.sid= sbolt.GetStudyEntry()
+                lines_ids.append(sbolt)
 
             if self.vb_folder_sid is None:
                 vbf= Geompy.NewFolder(self.vb_folder_name)
@@ -348,8 +343,13 @@ class Bolt1D(QObject):
 
     @pyqtSlot(int)
     def delete_bolt(self, id:int):
-        logging.info(f"delete_bolt: {id}")
-        self.Tree.delete_bolt(int(id))
+        sid = self.BoltsMgt.remove_bolt(id)
+
+        # delete from salome
+        if sid:
+            logging.info(f"deleting bolt {id} {str(sid)}")
+            Gst.removeFromStudy(sid)
+            Gst.eraseShapeByEntry(sid)
 
     @pyqtSlot(str,str)
     def write_files(self,file:str,export:str):
