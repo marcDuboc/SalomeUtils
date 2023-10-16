@@ -55,6 +55,7 @@ StudyEditor = getStudyEditor()
 Gst = geomtools.GeomStudyTools(StudyEditor)
 Gg = salome.ImportComponentGUI("GEOM")
 Geompy = geomBuilder.New()
+Builder = salome.myStudy.NewBuilder()
 
 
 class Bolt1D(QObject):
@@ -110,6 +111,8 @@ class Bolt1D(QObject):
         if bolts_prop:
             b_list = self.virtual_bolt_to_table()
             self.Gui.set_data(b_list)
+            self.Gui.model.updateBolt.connect(self.update_bolt)
+
 
     def create_salome_line(self, bolt:VirtualBolt) -> str:
         """function to create a salome line from a virtual bolt"""
@@ -150,8 +153,9 @@ class Bolt1D(QObject):
         self.Gui.parse.connect(self.parse_selected)
         self.Gui.select_root.connect(self.on_root_select)
         self.Gui.export_bolt.connect(self.write_files)
-        self.Gui.model.update.connect(self.update_bolt)
         self.Gui.deleteItem.delBolt.connect(self.delete_bolt)
+        self.Gui.model.updateBolt.connect(self.update_bolt)
+
         # APP => GUI
         self.parts_selected.connect(self.Gui.on_selection)
         self.parse_progess.connect(self.Gui.on_progress)
@@ -310,6 +314,7 @@ class Bolt1D(QObject):
             # add virtual bolts to table
             b_list = self.virtual_bolt_to_table()
             self.Gui.set_data(b_list)
+            self.Gui.model.updateBolt.connect(self.update_bolt)
 
             # delete parts
             delete=False
@@ -336,10 +341,37 @@ class Bolt1D(QObject):
             self.parts_selected.emit("select a compound or several parts","black")
   
     @pyqtSlot(int,float,float,float,float,float,float)
-    def update_bolt(self, id:str, bolt_prop:str):
-        logging.info(f"update_bolt: {id} {bolt_prop}")
-        bolt_prop = json.loads(bolt_prop)
-        self.Tree.update_bolt(int(id), bolt_prop)
+    def update_bolt(self, id:int, 
+                    radius:float,
+                    radius_start:float,
+                    radius_end:float, 
+                    start_height:float,
+                    end_height:float, 
+                    preload:float):
+        
+        bolt_prop = dict(radius=radius,
+                         radius_start=radius_start,
+                         radius_end=radius_end,
+                         start_height=start_height,
+                         end_height=end_height,
+                         preload=preload)
+
+        # update bolt properties
+        name = self.BoltsMgt.update_bolt(id, bolt_prop)
+        sid = self.BoltsMgt.get_bolt(id).sid
+
+        # update salome name
+        obj = salome.IDToObject(sid)
+        obj.SetName(name)
+
+        # update salome study attribute
+        sobj = salome.IDToSObject(sid)
+        sobjattr = Builder.FindOrCreateAttribute(sobj, "AttributeName")
+        sobjattr.SetValue(name)
+
+        #update viewer
+        salome.sg.updateObjBrowser()
+
 
     @pyqtSlot(int)
     def delete_bolt(self, id:int):

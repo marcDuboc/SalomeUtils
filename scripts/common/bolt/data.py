@@ -34,7 +34,15 @@ class VirtualBolt():
     ids_available=[x for x in range(1,1000)]
 
     def __init__(self,id=None ,*args, **kwargs):
-        setattr(self,'sid', None)
+        self.sid = None
+        self.start = 0.0
+        self.end = 0.0
+        self.radius = 0.0
+        self.start_radius = 0.0
+        self.start_height = 0.0
+        self.end_radius = 0.0
+        self.end_height = 0.0
+        self.preload = 0.0
 
         if id in VirtualBolt.ids_available:
             setattr(self,'id_instance',id)
@@ -45,9 +53,6 @@ class VirtualBolt():
         VirtualBolt.ids_used.add(self.id_instance)
         VirtualBolt.ids_counter += 1
 
-        # add preload
-        setattr(self,'preload', 0.0)
-        
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -85,7 +90,6 @@ class VirtualBolt():
     def get_length(self):
         return np.linalg.norm(self.end.get_coordinate() - self.start.get_coordinate())
     
-
 class BoltsManager():
     def __init__(self):
         self.bolts = []
@@ -114,10 +118,10 @@ class BoltsManager():
     
     def update_bolt(self, id:int, bolt_prop:dict):
         for bolt in self.bolts:
+            logging.debug(f"checking bolt {bolt.id_instance} against {id}")
             if bolt.id_instance == id:
+                logging.debug(f"updating bolt from manager {bolt.id_instance} with {bolt_prop}")
                 for key, value in bolt_prop.items():
                     setattr(bolt, key, value)
                 return bolt.get_detail_name() 
         return None
-        
-        

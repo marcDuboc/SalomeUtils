@@ -7,10 +7,11 @@
 import os
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QWidget, QGridLayout,QLabel, QLineEdit,QTableView, QGroupBox, QHBoxLayout,QCheckBox,QDoubleSpinBox,QFileDialog,QHeaderView, QProgressBar
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QVariant
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QVariant, QModelIndex
 from common.bolt.bgui.abstract import TypeDelegate, DeleteDelegate, SwapDelegate, HideShowDelegate, TableModel
 from common.bolt.shape import Method
 from common import IMG_PATH
+from common import logging
 
 import salome
 salome.salome_init()
@@ -255,14 +256,11 @@ class BoltGUI(QWidget):
         self.cb_export_json.stateChanged.connect(self.on_change_export_json)
         self.gp_export_comm.toggled.connect(self.on_change_export_comm)
         btnQuit.clicked.connect(self.close)
-
-
-    # slots
+    
     @pyqtSlot(str,str)
     def on_root_selection(self, root_name, color='black'):
         self.le_root.setText(root_name)
         self.le_root.setStyleSheet(f"color: {color};")
-
 
     @pyqtSlot(str,str)
     def on_selection(self, master_compound_name, color='black'):

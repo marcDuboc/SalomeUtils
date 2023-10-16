@@ -7,7 +7,7 @@
 import os
 from PyQt5.QtWidgets import QComboBox, QItemDelegate,QStyle
 from PyQt5.QtGui import QIcon, QColor
-from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal, QEvent
+from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal, QEvent, QVariant
 from common import IMG_PATH
 from common import logging
 
@@ -123,7 +123,7 @@ class HideShowDelegate(QItemDelegate):
         return super(HideShowDelegate, self).editorEvent(event, model, option, index)
 
 class TableModel(QAbstractTableModel):
-    update = pyqtSignal(int,float,float,float,float,float,float)  # Signal avec l'ID de la ligne en argument
+    updateBolt = pyqtSignal(int,float,float,float,float,float,float)  # Signal avec l'ID de la ligne en argument
 
     def __init__(self, data, header=None):
         super().__init__()
@@ -157,8 +157,13 @@ class TableModel(QAbstractTableModel):
             self.dataChanged.emit(index, index)
             # get the id from the data model
             id = self.data(index.siblingAtColumn(0), Qt.DisplayRole)
+
             # emit signal to update bolt
-            self.update.emit(id,*self._data[index.row()])
+            data_row = self._data[index.row()]
+            data_row = data_row[:7]
+            data_row = [float(x) for x in data_row]
+            self.updateBolt.emit(*data_row)
+            
         return True
         
     def flags(self, index):
