@@ -9,6 +9,7 @@ import sys
 import inspect
 import re
 import json
+import pickle
 import GEOM
 import salome
 from salome.kernel.studyedit import getStudyEditor
@@ -18,7 +19,7 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt, QVariant
 from PyQt5.QtWidgets import QDockWidget,QMessageBox
 
 #for debbuging
-DEBUG = False
+DEBUG = True
 
 try:
     if DEBUG:
@@ -105,6 +106,8 @@ class Bolt1D(QObject):
     def get_existing_bolt(self,roots):
         # get the existing virtual bolts
         self.bolts = self.Tree.parse_for_bolt(roots)
+
+        # add virtual bolts to table
         if self.bolts:
             b_list = self.virtual_bolt_to_table()
             self.Gui.set_data(b_list)
