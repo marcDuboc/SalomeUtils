@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# module to wrtie aster comm files  
+# License: LGPL v 3.0
+# Autor: Marc DUBOC
+# Version: 28/08/2023
+
 import numpy as np
 from collections import defaultdict 
 from common.bolt.data import VirtualBolt

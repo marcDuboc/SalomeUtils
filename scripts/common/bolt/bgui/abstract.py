@@ -30,7 +30,7 @@ class TypeDelegate(QItemDelegate):
         model.setData(index, editor.currentText(), Qt.EditRole)
 
 class DeleteDelegate(QItemDelegate):
-    delContact = pyqtSignal(int) 
+    delBolt = pyqtSignal(int) 
 
     def __init__(self, *args, **kwargs):
         super(DeleteDelegate, self).__init__(*args, **kwargs)
@@ -48,7 +48,7 @@ class DeleteDelegate(QItemDelegate):
             # get the id from the data model
             id = index.model().data(index.siblingAtColumn(0), Qt.DisplayRole)
             model.removeRows(index.row(),1)
-            self.delContact.emit(id)
+            self.delBolt.emit(id)
             return True
         
         return super(DeleteDelegate, self).editorEvent(event, model, option, index)
@@ -123,6 +123,8 @@ class HideShowDelegate(QItemDelegate):
         return super(HideShowDelegate, self).editorEvent(event, model, option, index)
 
 class TableModel(QAbstractTableModel):
+    update = pyqtSignal(int,float,float,float,float,float,float)  # Signal avec l'ID de la ligne en argument
+
     def __init__(self, data, header=None):
         super().__init__()
         self._data = data
@@ -153,6 +155,10 @@ class TableModel(QAbstractTableModel):
                 return False
             self._data[index.row()][index.column()] = value
             self.dataChanged.emit(index, index)
+            # get the id from the data model
+            id = self.data(index.siblingAtColumn(0), Qt.DisplayRole)
+            # emit signal to update bolt
+            self.update.emit(id,*self._data[index.row()])
         return True
         
     def flags(self, index):

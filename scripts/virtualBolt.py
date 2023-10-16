@@ -32,7 +32,8 @@ try:
     from common.bolt.bgui.mainwin import BoltGUI
     from common.tree import id_to_tuple
     from common.bolt.treeBolt import TreeBolt
-    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
+    from common.bolt.data import BoltsManager
+    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread
     from common.properties import *
     from common.bolt.aster import MakeComm
     from common import logging
@@ -45,14 +46,17 @@ except:
     from common.bolt.bgui.mainwin import BoltGUI
     from common.tree import id_to_tuple
     from common.bolt.treeBolt import TreeBolt
-    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread ,create_salome_line
+    from common.bolt.data import BoltsManager, VirtualBolt
+    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread
     from common.properties import *
     from common.bolt.aster import MakeComm
     from common import logging
 
 StudyEditor = getStudyEditor()
 Gst = geomtools.GeomStudyTools(StudyEditor)
+Gg = salome.ImportComponentGUI("GEOM")
 Geompy = geomBuilder.New()
+
 
 class Bolt1D(QObject):
     pattern_bolt = re.compile(r'_B\d{1,3}(_-?\d+(\.\d+)?)+')
@@ -70,7 +74,7 @@ class Bolt1D(QObject):
         self.Parse= Parse()
         self.roots =None
         self.vb_folder_sid = None
-        self.bolts = None
+        self.BoltsMgt = BoltsManager()
 
         self.parts_id =[]
         self.compound_id = None
@@ -85,13 +89,13 @@ class Bolt1D(QObject):
 
     def delete_all_virtual_bolt(self):
         logging.info("delete_all_virtual_bolt")
-        for b in self.bolts:
+        for b in self.BoltsMgt.bolts:
             del b
         self.bolts = None
     
     def virtual_bolt_to_table(self):
         bolt_array= []
-        for b in self.bolts:
+        for b in self.BoltsMgt.bolts:
             logging.info(b)
             bolt_array.append([b.id_instance,
                                b.radius,
@@ -105,12 +109,46 @@ class Bolt1D(QObject):
 
     def get_existing_bolt(self,roots):
         # get the existing virtual bolts
-        self.bolts = self.Tree.parse_for_bolt(roots)
+        bolts_prop =   self.Tree.parse_for_bolt(roots)
+        for b in bolts_prop:
+            self.BoltsMgt.add_bolt(b['prop'],b['id'])
 
         # add virtual bolts to table
-        if self.bolts:
+        if bolts_prop:
             b_list = self.virtual_bolt_to_table()
             self.Gui.set_data(b_list)
+
+    def create_salome_line(self, bolt:VirtualBolt) -> str:
+        """function to create a salome line from a virtual bolt"""
+        p0_val = bolt.start.get_coordinate().tolist()
+        p1_val = bolt.end.get_coordinate().tolist()
+        p0 = Geompy.MakeVertex(*p0_val)
+        p1 = Geompy.MakeVertex(*p1_val)
+        l= Geompy.MakeLineTwoPnt(p0,p1)
+        ld= Geompy.addToStudy(l,bolt.get_detail_name())
+        Gg.setColor(ld,0,255,0)
+
+        #create group for line and points
+        grp_l = Geompy.CreateGroup(l, Geompy.ShapeType["EDGE"])
+        grp_e0 = Geompy.CreateGroup(l, Geompy.ShapeType["VERTEX"])
+        grp_e1 = Geompy.CreateGroup(l, Geompy.ShapeType["VERTEX"])
+
+        # get the vertex of the line
+        li = Geompy.SubShapeAll(l,Geompy.ShapeType["EDGE"])
+        lid = Geompy.GetSubShapeID(l,li[0])
+        Geompy.AddObject(grp_l,lid)
+
+        vi = Geompy.SubShapeAll(l,Geompy.ShapeType["VERTEX"])
+        vid = [Geompy.GetSubShapeID(l,v) for v in vi]
+        Geompy.AddObject(grp_e0,vid[0])
+        Geompy.AddObject(grp_e1,vid[1])
+
+        #add the line and points to the group
+        Geompy.addToStudyInFather(salome.IDToObject(ld),grp_l,bolt.get_bolt_name())
+        Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e0,bolt.get_start_name())
+        Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e1,bolt.get_end_name())
+        
+        return l
 
     # signal slots connection =================================================
     def connect(self):
@@ -119,6 +157,8 @@ class Bolt1D(QObject):
         self.Gui.parse.connect(self.parse_selected)
         self.Gui.select_root.connect(self.on_root_select)
         self.Gui.export_bolt.connect(self.write_files)
+        self.Gui.model.update.connect(self.update_bolt)
+        self.Gui.deleteItem.delBolt.connect(self.delete_bolt)
         # APP => GUI
         self.parts_selected.connect(self.Gui.on_selection)
         self.parse_progess.connect(self.Gui.on_progress)
@@ -126,7 +166,6 @@ class Bolt1D(QObject):
         
 
     # Slot ====================================================================
-    
     @pyqtSlot()
     def on_root_select(self):
         logging.info("on_root_select")
@@ -195,7 +234,7 @@ class Bolt1D(QObject):
         nuts=[]
         screws=[]
         threads=[]
-        v_bolts = []
+        new_bolts_id=[]
         parts_to_delete = []
         lines_ids = []
 
@@ -245,25 +284,26 @@ class Bolt1D(QObject):
 
             # create virtual bolts
             for bolt in connections['bolts']:
-                v_bolt = create_virtual_bolt(bolt)
-
-                if not v_bolt is None:
-                    v_bolts.append(v_bolt)    
+                bolt_prop = create_virtual_bolt(bolt)
+                new_id = self.BoltsMgt.add_bolt(bolt_prop)
+                new_bolts_id.append(new_id)
+                if not bolt_prop is None:  
                     for p in bolt:
                         parts_to_delete.append(p.part_id)
 
             for threads in connections['threads']:
-                v_bolt = create_virtual_bolt_from_thread(threads)
-
-                if not v_bolt is None:
-                    v_bolts.append(v_bolt)
+                bolt_prop = create_virtual_bolt_from_thread(threads)
+                self.BoltsMgt.add_bolt(bolt_prop)
+                new_bolts_id.append(new_id)
+                if not bolt_prop is None:
                     for p in threads:
                         if isinstance(p,Screw):
                                 parts_to_delete.append(p.part_id)
 
             # build geom in salome
-            for v_bolt in v_bolts:
-                lines_ids.append(create_salome_line(v_bolt))
+            for id in new_bolts_id:
+                b = self.BoltsMgt.get_bolt(id)
+                lines_ids.append(self.create_salome_line(b))
 
             if self.vb_folder_sid is None:
                 vbf= Geompy.NewFolder(self.vb_folder_name)
@@ -273,9 +313,6 @@ class Bolt1D(QObject):
             Geompy.PutListToFolder(lines_ids, vbf)
 
             # add virtual bolts to table
-            for v_bolt in v_bolts:
-                self.bolts.append(v_bolt)
-
             b_list = self.virtual_bolt_to_table()
             self.Gui.set_data(b_list)
 
@@ -294,7 +331,7 @@ class Bolt1D(QObject):
             # display message box with number of virtaul bolt created. On Ok, emit signal to reset the GUI
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Information)
-            msg.setText(f"{len(v_bolts)} virtual bolts created")
+            msg.setText(f"{len(new_bolts_id)} virtual bolts created")
             msg.setWindowTitle("Virtual Bolt")
             msg.setStandardButtons(QMessageBox.Ok)
             msg.exec_()
@@ -303,6 +340,17 @@ class Bolt1D(QObject):
             self.compound_id = None
             self.parts_selected.emit("select a compound or several parts","black")
   
+    @pyqtSlot(int,float,float,float,float,float,float)
+    def update_bolt(self, id:str, bolt_prop:str):
+        logging.info(f"update_bolt: {id} {bolt_prop}")
+        bolt_prop = json.loads(bolt_prop)
+        self.Tree.update_bolt(int(id), bolt_prop)
+
+    @pyqtSlot(int)
+    def delete_bolt(self, id:int):
+        logging.info(f"delete_bolt: {id}")
+        self.Tree.delete_bolt(int(id))
+
     @pyqtSlot(str,str)
     def write_files(self,file:str,export:str):
         if self.bolts:

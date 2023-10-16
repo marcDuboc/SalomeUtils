@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# module to navigate in the salome tree strucutre  
+# Specialize class Tree for bolt 
 # License: LGPL v 3.0
 # Autor: Marc DUBOC
-# Version: 28/08/2023
+# Version: 16/10/2023
 
 import re
 import salome
@@ -32,7 +32,6 @@ class TreeBolt(Tree):
             
         return None
     
-
     def parse_for_bolt(self,root):
         """
         return a list of virtual bolt
@@ -68,7 +67,7 @@ class TreeBolt(Tree):
                                         'end_height': float(data[5]),
                                         'preload': float(data[6]),
                                     }
-                    bolts.append(VirtualBolt(id=id, **bolt_properties))
+                    bolts.append(dict(id=id, prop=bolt_properties))
 
 
         return bolts

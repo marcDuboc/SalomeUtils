@@ -1,13 +1,17 @@
+# -*- coding: utf-8 -*-
+# module to extract the screw, nut and tread from a CAD model
+# License: LGPL v 3.0
+# Autor: Marc DUBOC
+# Version: 28/08/2023
 
-import sys
 import numpy as np
-from itertools import combinations,product
+from itertools import product
 from enum import Enum
 
 import GEOM
 import salome
 from salome.geom import geomBuilder
-Gg = salome.ImportComponentGUI("GEOM")
+
 
 # Detect current study
 Geompy = geomBuilder.New()
@@ -79,7 +83,6 @@ class Thread():
     def __init__(self,  *args, **kwargs) -> None:
         for key, value in kwargs.items():
             setattr(self, key, value)
-
 
 class ShapeCoincidence():
     """
@@ -465,6 +468,7 @@ class Parse():
                     else:
                         return None
 
+
 def pair_screw_nut_threads(screw_list, nut_list, treads_list,tol_angle=0.01, tol_dist=0.01) -> dict:
     """
     Pair the screw and nut together
@@ -507,7 +511,7 @@ def pair_holes(holes_list,tol_angle=0.01, tol_dist=0.01) -> dict:
 
 def create_virtual_bolt(pair:list):
 
-    if type(pair[0])==Nut and type(pair[1])==Screw:
+    if isinstance(pair[0],Nut) and isinstance(pair[1],Screw):
         nut = pair[0]
         screw = pair[1]
 
@@ -539,15 +543,15 @@ def create_virtual_bolt(pair:list):
         'end_height': -1.0,
     }
 
-    return VirtualBolt(**bolt_properties)
+    return bolt_properties
 
 def create_virtual_bolt_from_thread(pair:list):
     
-    if type(pair[0])==Thread and type(pair[1])==Screw:
+    if isinstance(pair[0],Thread) and isinstance(pair[1],Screw):
         thread = pair[0]
         screw = pair[1]
 
-    elif type(pair[0])==Screw and type(pair[1])==Thread:
+    elif isinstance(pair[0],Screw) and isinstance(pair[1],Thread):
         screw = pair[0]
         thread = pair[1]
 
@@ -592,39 +596,8 @@ def create_virtual_bolt_from_thread(pair:list):
         'end_height': end_height,
     }
 
-    return VirtualBolt(**bolt_properties)
+    return bolt_properties
 
-def create_salome_line(bolt:VirtualBolt) -> str:
-    """function to create a salome line from a virtual bolt"""
-    p0_val = bolt.start.get_coordinate().tolist()
-    p1_val = bolt.end.get_coordinate().tolist()
-    p0 = Geompy.MakeVertex(*p0_val)
-    p1 = Geompy.MakeVertex(*p1_val)
-    l= Geompy.MakeLineTwoPnt(p0,p1)
-    ld= Geompy.addToStudy(l,bolt.get_detail_name())
-    Gg.setColor(ld,0,255,0)
-
-    #create group for line and points
-    grp_l = Geompy.CreateGroup(l, Geompy.ShapeType["EDGE"])
-    grp_e0 = Geompy.CreateGroup(l, Geompy.ShapeType["VERTEX"])
-    grp_e1 = Geompy.CreateGroup(l, Geompy.ShapeType["VERTEX"])
-
-    # get the vertex of the line
-    li = Geompy.SubShapeAll(l,Geompy.ShapeType["EDGE"])
-    lid = Geompy.GetSubShapeID(l,li[0])
-    Geompy.AddObject(grp_l,lid)
-
-    vi = Geompy.SubShapeAll(l,Geompy.ShapeType["VERTEX"])
-    vid = [Geompy.GetSubShapeID(l,v) for v in vi]
-    Geompy.AddObject(grp_e0,vid[0])
-    Geompy.AddObject(grp_e1,vid[1])
-
-    #add the line and points to the group
-    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_l,bolt.get_bolt_name())
-    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e0,bolt.get_start_name())
-    Geompy.addToStudyInFather(salome.IDToObject(ld),grp_e1,bolt.get_end_name())
-    
-    return l
 
 
 

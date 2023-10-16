@@ -1,5 +1,16 @@
+# -*- coding: utf-8 -*-
+# container to store the virtual bolt properties 
+# License: LGPL v 3.0
+# Autor: Marc DUBOC
+# Version: 16/10/2023
+
 import numpy as np
-from collections import defaultdict
+
+class VirtualBoltMaterial():
+    E  = 2.1e5 # N/mm2
+    nu = 0.3
+    rho = 7.85e-6 # kg/mm3
+    alpha = 1.2e-5 # 1/°C
 
 class VirtualBolt():
     """
@@ -38,6 +49,12 @@ class VirtualBolt():
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    # eq operator to compare two bolts by checking if start and end points are the same
+    def __eq__(self, other):
+        if isinstance(other, VirtualBolt):
+            return (self.start == other.start and self.end == other.end) or (self.start == other.end and self.end == other.start)
+        return False
+
     def __del__(self):
         VirtualBolt.ids_used.remove(self.id_instance)
         VirtualBolt.ids_available.append(self.id_instance)
@@ -64,29 +81,34 @@ class VirtualBolt():
         return np.linalg.norm(self.end.get_coordinate() - self.start.get_coordinate())
     
 
-    class BoltsManager():
-        def __init__(self):
-            self.bolts = []
+class BoltsManager():
+    def __init__(self):
+        self.bolts = []
 
-        def add_bolt(self, bolt_prop:dict, id:int=None):
-            self.bolts.append(VirtualBolt(id=id, **bolt_prop))
+    def add_bolt(self, bolt_prop:dict, id:int=None):
+        self.bolts.append(VirtualBolt(id=id, **bolt_prop))
+        return self.bolts[-1].id_instance
 
-        def get_bolt(self, id:int):
-            for bolt in self.bolts:
-                if bolt.id_instance == id:
-                    return bolt
-            return None
+    def get_bolt(self, id:int):
+        for bolt in self.bolts:
+            if bolt.id_instance == id:
+                return bolt
+        return None
+    
+    def delete_bolt(self, id:int):
+        for i,bolt in enumerate(self.bolts):
+            if bolt.id_instance == id:
+                del bolt
+                del self.bolts[i]
+                return
+        return None
+    
+    def update_bolt(self, id:int, bolt_prop:dict):
+        for bolt in self.bolts:
+            if bolt.id_instance == id:
+                for key, value in bolt_prop.items():
+                    setattr(bolt, key, value)
+                return bolt.get_detail_name() 
+        return None
         
-        def delete_bolt(self, id:int):
-            for bolt in self.bolts:
-                if bolt.id_instance == id:
-                    del bolt
-                    return
-            return None
         
-        def rename_bolt(self, id:int, new_name:str):
-            for bolt in self.bolts:
-                if bolt.id_instance == id:
-                    bolt.name = new_name
-                    return
-            return None
