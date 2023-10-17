@@ -54,7 +54,10 @@ class VirtualBolt():
         VirtualBolt.ids_counter += 1
 
         for key, value in kwargs.items():
-            setattr(self, key, value)
+                # if float round 1 digit
+                if isinstance(value, float):
+                    value = round(value,1)
+                setattr(self, key, value)
 
     # eq operator to compare two bolts by checking if start and end points are the same
     def __eq__(self, other):
