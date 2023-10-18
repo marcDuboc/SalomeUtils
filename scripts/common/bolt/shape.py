@@ -76,13 +76,22 @@ class Thread():
     attributes:
         part_id: str
         origin: Point
+        end: Point
         direction: Vector
         height: float
         radius: float
     """
     def __init__(self,  *args, **kwargs) -> None:
+        self.part_id = ""
+        self.origin = Point(0,0,0)
+        self.end = Point(0,0,0)
+        self.axis = Vector(0,0,0)
+        self.height = 0
+        self.radius = 0
+
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
     
     def __repr__(self) -> str:
         return f"Thread({self.origin}, {self.end}, {self.axis}, {self.height}, {self.radius})"
@@ -433,7 +442,8 @@ class Parse():
                 if (s.height/(s.radius1*2)) > self.THREAD_RATIO_MINIMUM:
                     candidate.append(s)
 
-        filtered = self._filter_candidate_treads(candidate)
+        #filtered = self._filter_candidate_treads(candidate)
+        filtered = candidate
 
         # create thread object
         for c in filtered:
@@ -469,7 +479,8 @@ class Parse():
             subshapes= Geompy.SubShapeAll(obj,GEOM.FACE)
 
             # get the basic properties from geompy
-            props = list()
+            unfiltred_cyl = list()
+            other = list()
 
             is_candidate = False
             for s in subshapes:
@@ -478,35 +489,30 @@ class Parse():
                     if isinstance(p, Cylinder):
                         if (p.radius1*2)>=min_diameter and (p.radius1*2)<=max_diameter:
                             is_candidate = True
-                            props.append(p)
-                            
+                            unfiltred_cyl.append(p)
 
                     elif isinstance(p,tuple(self.allow_type)) and isinstance(p,Cylinder) == False:
-                        props.append(p)
+                        other.append(p)
 
             if not is_candidate:
                 return None
             
             else:
-                #regroup cylinder get
-                # first check with the number of cylinder
-                #cyls = [s for s in props if isinstance(s,Cylinder)]
-                #cyls = list(set(cyls))
+                # regroup cylinder by comparing their origin, if similar and represent a full cylinder they are grouped
+                filtred_cyl =self._filter_cylinders(unfiltred_cyl)
+                props = filtred_cyl + other
                 
                 screw_nut = self.is_nut_or_bolt(props)
                 if screw_nut is not None:
-                    id = obj.GetStudyEntry()
                     screw_nut.part_id = obj_id
                     return screw_nut
                     
                 else:
                     is_tread = self.is_tread(props)
                     if is_tread is not None:
-                        id = obj.GetStudyEntry()
                         for t in is_tread:
                             t.part_id = obj_id
                         return is_tread
-                    
                     else:
                         return None
 
@@ -549,7 +555,45 @@ def pair_screw_nut_threads(screw_list, nut_list, treads_list,tol_angle=0.01, tol
     return dict(bolts=screw_nut_pairs, threads=screw_thread_pairs)
 
 def pair_holes(holes_list,tol_angle=0.01, tol_dist=0.01) -> dict:
-    pass
+    """
+    Pair the hole together
+
+    attributes:
+        hole_list: list of screw
+        tol_angle: tolerance angle to check if the axis are colinear
+        tol_dist: tolerance distance to check if the axis are colinear
+
+    return:
+        dict(bolts=screw_nut_pairs, treads=screw_thread_pairs)
+    """
+    #1. pair the holes together using itertools product
+    hole_pairs = list(product(holes_list, holes_list))
+
+    #2. check if the holes are coincident
+    S = ShapeCoincidence()
+    hole_pairs = [p for p in hole_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
+
+    #3. check the min and max distance between the pair holes extremities
+    valid_pairs=[]
+    for p in hole_pairs:
+        p0_s = p[0].origin.get_coordinate()
+        p0_e = p[0].end.get_coordinate()
+        p1_s = p[1].origin.get_coordinate()
+        p1_e = p[1].end.get_coordinate()
+
+        dist = [np.linalg.norm(p0_s - p1_s),np.linalg.norm(p0_s - p1_e),np.linalg.norm(p0_e - p1_s),np.linalg.norm(p0_e - p1_e)]
+        min_dist = np.min(dist)
+        max_dist = np.max(dist)
+
+        # valid if the max distance is larger than the sum height of height the hole
+        if max_dist > p[0].height + p[1].height:
+            valid_pairs.append(p)
+
+    logging.info(f"valid_pairs: {valid_pairs}")
+    return valid_pairs
+            
+
+
 
 def create_virtual_bolt(pair:list):
 
