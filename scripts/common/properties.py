@@ -151,7 +151,7 @@ type_to_class = {
 
 def check_cylinder_direction(kos_list,obj):
     """ Check if the cylinder is in the right direction. """
-    logging.info("Check cylinder direction")
+    #logging.info("Check cylinder direction")
     explode = Geompy.SubShapeAll(obj,GEOM.EDGE)
     edges = [get_properties(e) for e in explode]
 
@@ -162,7 +162,7 @@ def check_cylinder_direction(kos_list,obj):
 
 
     if any(isinstance(e,(Circle,ArcCircle)) for e in edges) == False:
-            logging.info("No circle or arc circle found")
+            #logging.info("No circle or arc circle found")
             return None
     
     else: 

@@ -18,7 +18,7 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, Qt, QVariant
 from PyQt5.QtWidgets import QDockWidget,QMessageBox
 
 #for debbuging
-DEBUG = True
+DEBUG = False
 
 try:
     if DEBUG:
