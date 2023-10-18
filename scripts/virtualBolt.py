@@ -261,7 +261,7 @@ class Bolt1D(QObject):
 
                 elif isinstance(o,list):
                     for e in o:
-                        if isinstance(o,Thread):
+                        if isinstance(e,Thread):
                             threads.append(e)
 
                 self.parse_progess.emit(progress)
@@ -281,17 +281,17 @@ class Bolt1D(QObject):
             # create virtual bolts
             for bolt in connections['bolts']:
                 bolt_prop = create_virtual_bolt(bolt)
-                new_id = self.BoltsMgt.add_bolt(bolt_prop)
-                new_bolts_id.append(new_id)
-                if not bolt_prop is None:  
+                if bolt_prop: 
+                    new_id = self.BoltsMgt.add_bolt(bolt_prop)
+                    new_bolts_id.append(new_id)  
                     for p in bolt:
                         parts_to_delete.append(p.part_id)
 
             for threads in connections['threads']:
                 bolt_prop = create_virtual_bolt_from_thread(threads)
-                self.BoltsMgt.add_bolt(bolt_prop)
-                new_bolts_id.append(new_id)
-                if not bolt_prop is None:
+                if bolt_prop:
+                    new_id=self.BoltsMgt.add_bolt(bolt_prop)
+                    new_bolts_id.append(new_id)
                     for p in threads:
                         if isinstance(p,Screw):
                                 parts_to_delete.append(p.part_id)
