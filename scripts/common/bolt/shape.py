@@ -5,7 +5,7 @@
 # Version: 28/08/2023
 
 import numpy as np
-from itertools import product
+from itertools import product,combinations
 from enum import Enum
 
 import GEOM
@@ -516,7 +516,6 @@ class Parse():
                     else:
                         return None
 
-
 def pair_screw_nut_threads(screw_list, nut_list, treads_list,tol_angle=0.01, tol_dist=0.01) -> dict:
     """
     Pair the screw and nut together
@@ -570,14 +569,16 @@ def pair_holes(holes_list,tol_angle=0.01, tol_dist=0.01) -> dict:
     return:
         dict(bolts=screw_nut_pairs, treads=screw_thread_pairs)
     """
-    logging.info(f"method holes / holes_list: {holes_list}")
 
-    #1. pair the holes together using itertools product
-    hole_pairs = list(product(holes_list, holes_list))
+    #1. pair the holes together using itertools
+
+    hole_pairs = list(combinations(holes_list, 2))
 
     #2. check if the holes are coincident
     S = ShapeCoincidence()
     hole_pairs = [p for p in hole_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
+
+    logging.info(f"hole_pairs: {hole_pairs}")
 
     #3. check the min and max distance between the pair holes extremities
     valid_pairs=[]
@@ -590,17 +591,15 @@ def pair_holes(holes_list,tol_angle=0.01, tol_dist=0.01) -> dict:
         dist = [np.linalg.norm(p0_s - p1_s),np.linalg.norm(p0_s - p1_e),np.linalg.norm(p0_e - p1_s),np.linalg.norm(p0_e - p1_e)]
         min_dist = np.min(dist)
         max_dist = np.max(dist)
+        logging.info(f"min_dist: {min_dist} \t max_dist: {max_dist}")
 
         # valid if the max distance is larger than the sum height of height the hole
-        if max_dist > p[0].height + p[1].height:
+        if max_dist >= p[0].height + p[1].height:
             valid_pairs.append(p)
 
     logging.info(f"valid_pairs: {valid_pairs}")
-    return valid_pairs
-            
-
-
-
+    return dict(holes=valid_pairs)
+ 
 def create_virtual_bolt(pair:list):
 
     if isinstance(pair[0],Nut) and isinstance(pair[1],Screw):
@@ -690,8 +689,111 @@ def create_virtual_bolt_from_thread(pair:list):
 
     return bolt_properties
 
+def create_virtual_bolt_from_hole(pair:list):
+
+    commom_bolt_diameter = [2,3,3.5,4,5,6,8,10,12,14,16,20,24,30,36,42,48,56,64,72,80,90,100]
+    factor_diamter_to_head = 1.6
+
+    # 1 from the list of points get the farthest points form each other
+    p0_s = pair[0].origin.get_coordinate()
+    p0_e = pair[0].end.get_coordinate()
+    p1_s = pair[1].origin.get_coordinate()
+    p1_e = pair[1].end.get_coordinate()
+    dist = [np.linalg.norm(p0_s - p1_s),np.linalg.norm(p0_s - p1_e),np.linalg.norm(p0_e - p1_s),np.linalg.norm(p0_e - p1_e)]
+    max_dist = np.max(dist)
+
+    extremity = None
+    if max_dist == np.linalg.norm(p0_s - p1_s):
+        extremity= dict(start=Point(*p0_s),end=Point(*p1_s))
+    elif max_dist == np.linalg.norm(p0_s - p1_e):
+        extremity= dict(start=Point(*p0_s),end=Point(*p1_e))
+    elif max_dist == np.linalg.norm(p0_e - p1_s):
+        extremity= dict(start=Point(*p0_e),end=Point(*p1_s))
+    elif max_dist == np.linalg.norm(p0_e - p1_e):
+        extremity= dict(start=Point(*p0_e),end=Point(*p1_e))
+
+    # 2 get the diameter of the hole
+    radius1 = pair[0].radius
+    radius2 = pair[1].radius
+
+    if radius1 != radius2:
+        screw_radius= 0.0
+        extremity_start = 0
+
+        # suppose junction screw and threads, the largest diameter been the screw
+        if radius1 > radius2:
+            screw_radius_ref = radius1
+            thread_radius_ref = radius2
+            thread_height = pair[1].height
+            extremity_start = 0
+
+        elif radius2 > radius1:
+            screw_radius_ref = radius2
+            thread_radius_ref = radius1
+            thread_height = pair[0].height
+            extremity_start = 1
+
+        # get the diamter of the screw by searching the closed value in the list commom_bolt_diameter
+        d_idx = np.argmin([np.abs(np.array(commom_bolt_diameter) - screw_radius_ref*2)])
+        diameter = commom_bolt_diameter[d_idx]
+        radius = diameter/2
+
+        if radius*factor_diamter_to_head < screw_radius_ref:
+            screw_radius = screw_radius_ref*factor_diamter_to_head
+
+        else:
+            screw_radius = radius*factor_diamter_to_head
+
+        # create the virtual bolt
+        bolt_properties = {
+            'start': extremity['start'],
+            'end': extremity['end'],
+            'radius': screw_radius,
+            'start_radius': 0.0,
+            'start_height': 0.0,
+            'end_radius': 0.0,
+            'end_height': 0.0,
+        }
+
+        if extremity_start == 0:
+            bolt_properties['start_radius'] = screw_radius
+            bolt_properties['start_height'] = 1.0
+            bolt_properties['end_radius'] = thread_radius_ref
+            bolt_properties['end_height'] = -thread_height
+
+        elif extremity_start == 1:
+            bolt_properties['start_radius'] = thread_radius_ref
+            bolt_properties['start_height'] = thread_height
+            bolt_properties['end_radius'] = screw_radius
+            bolt_properties['end_height'] = -1.0
 
 
+    elif radius2 == radius1:
+        contact_radius = 0.0
+        # suppose junction screw and nut
+        # get the diamter of the screw by searching the closed value in the list commom_bolt_diameter
+        d_idx = np.argmin([np.abs(np.array(commom_bolt_diameter) - radius1*2)])
+        diameter = commom_bolt_diameter[d_idx]
+        radius = diameter/2
+
+        if radius*factor_diamter_to_head < radius1:
+            contact_radius = radius1*factor_diamter_to_head
+        
+        else:
+            contact_radius = radius*factor_diamter_to_head
+
+        # create the virtual bolt
+        bolt_properties = {
+            'start': extremity['start'],
+            'end': extremity['end'],
+            'radius': radius,
+            'start_radius': contact_radius,
+            'start_height': 1.0,
+            'end_radius': contact_radius,
+            'end_height': -1.0,
+        }
+
+    return bolt_properties
 
 
 

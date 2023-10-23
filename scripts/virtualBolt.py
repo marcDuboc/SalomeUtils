@@ -32,7 +32,7 @@ try:
     from common.tree import id_to_tuple
     from common.bolt.treeBolt import TreeBolt
     from common.bolt.data import BoltsManager,VirtualBolt
-    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread
+    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread,create_virtual_bolt_from_hole
     from common.properties import *
     from common.bolt.aster import MakeComm
     from common import logging
@@ -46,7 +46,7 @@ except:
     from common.tree import id_to_tuple
     from common.bolt.treeBolt import TreeBolt
     from common.bolt.data import BoltsManager, VirtualBolt
-    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread
+    from common.bolt.shape import Method, Parse, Nut, Screw, Thread, pair_screw_nut_threads, pair_holes,create_virtual_bolt,create_virtual_bolt_from_thread,create_virtual_bolt_from_hole
     from common.properties import *
     from common.bolt.aster import MakeComm
     from common import logging
@@ -279,22 +279,31 @@ class Bolt1D(QObject):
             #logging.info(connections)
 
             # create virtual bolts
-            for bolt in connections['bolts']:
-                bolt_prop = create_virtual_bolt(bolt)
-                if bolt_prop: 
-                    new_id = self.BoltsMgt.add_bolt(bolt_prop)
-                    new_bolts_id.append(new_id)  
-                    for p in bolt:
-                        parts_to_delete.append(p.part_id)
+            if 'bolts' in connections.keys():
+                for bolt in connections['bolts']:
+                    bolt_prop = create_virtual_bolt(bolt)
+                    if bolt_prop: 
+                        new_id = self.BoltsMgt.add_bolt(bolt_prop)
+                        new_bolts_id.append(new_id)  
+                        for p in bolt:
+                            parts_to_delete.append(p.part_id)
 
-            for threads in connections['threads']:
-                bolt_prop = create_virtual_bolt_from_thread(threads)
-                if bolt_prop:
-                    new_id=self.BoltsMgt.add_bolt(bolt_prop)
-                    new_bolts_id.append(new_id)
-                    for p in threads:
-                        if isinstance(p,Screw):
-                                parts_to_delete.append(p.part_id)
+            if 'threads' in connections.keys():
+                for threads in connections['threads']:
+                    bolt_prop = create_virtual_bolt_from_thread(threads)
+                    if bolt_prop:
+                        new_id=self.BoltsMgt.add_bolt(bolt_prop)
+                        new_bolts_id.append(new_id)
+                        for p in threads:
+                            if isinstance(p,Screw):
+                                    parts_to_delete.append(p.part_id)
+
+            if 'holes' in connections.keys():
+                for holes in connections['holes']:
+                    bolt_prop = create_virtual_bolt_from_hole(holes)
+                    if bolt_prop:
+                        new_id=self.BoltsMgt.add_bolt(bolt_prop)
+                        new_bolts_id.append(new_id)
 
             # build geom in salome
             for id in new_bolts_id:
@@ -372,7 +381,6 @@ class Bolt1D(QObject):
         #update viewer
         salome.sg.updateObjBrowser()
 
-
     @pyqtSlot(int)
     def delete_bolt(self, id:int):
         sid = self.BoltsMgt.remove_bolt(id)
@@ -385,17 +393,17 @@ class Bolt1D(QObject):
 
     @pyqtSlot(str,str)
     def write_files(self,file:str,export:str):
-        if self.bolts:
+        if self.BoltsMgt.bolts:
             if export=="ASTER":
                 comm = MakeComm()
-                data = comm.process(self.bolts)
+                data = comm.process(self.BoltsMgt.bolts)
                 str_data = comm.to_str(data)
                 with open(file, 'w') as f:
                     f.write(str_data)
                 
             elif export=="RAW":
                 with open(file, 'w') as f:
-                    json.dump(self.bolts, f, default=lambda o: o.__dict__, indent=4)
+                    json.dump(self.BoltsMgt.bolts, f, default=lambda o: o.__dict__, indent=4)
 
 class MyDockWidget(QDockWidget):
     widgetClosed = pyqtSignal()

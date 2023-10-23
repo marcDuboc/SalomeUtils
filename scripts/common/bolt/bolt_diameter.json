@@ -1,0 +1,58 @@
+[
+    {
+        "M": 3,
+        "head_diameter": 5.5
+    },
+    {
+        "M": 4,
+        "head_diameter": 7
+    },
+    {
+        "M": 5,
+        "head_diameter": 8.5
+    },
+    {
+        "M": 6,
+        "head_diameter": 10
+    },
+    {
+        "M": 8,
+        "head_diameter": 13
+    },
+    {
+        "M": 10,
+        "head_diameter": 16
+    },
+    {
+        "M": 12,
+        "head_diameter": 18
+    },
+    {
+        "M": 14,
+        "head_diameter": 21
+    },
+    {
+        "M": 16,
+        "head_diameter": 24
+    },
+    {
+        "M": 20,
+        "head_diameter": 30
+    },
+    {
+        "M": 24,
+        "head_diameter": 36
+    },
+    {
+        "M": 30,
+        "head_diameter": 45
+    },
+    {
+        "M": 36,
+        "head_diameter": 54
+    },
+    {
+        "M": 42,
+        "head_diameter": 63
+    }
+]
