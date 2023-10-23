@@ -150,7 +150,7 @@ type_to_class = {
 
 
 def check_cylinder_direction(kos_list,obj):
-    """ Check if the cylinder is in the right direction. """
+    """ Check if the cylinder is in the right directionn and set the origin to the closest circle"""
     #logging.info("Check cylinder direction")
     explode = Geompy.SubShapeAll(obj,GEOM.EDGE)
     edges = [get_properties(e) for e in explode]
@@ -179,12 +179,14 @@ def check_cylinder_direction(kos_list,obj):
         po = np.argmin(d)
         pc = np.argmax(d)
 
+        new_origin = origin_circles[po]
         # get the extremty of the cylinder using the vector and cylinder origin
         c1 = origin_cylinder.get_coordinate() + vector_cylinder.get_vector()*height_cylinder
 
         # check if the extremty pc and ci are closed using np.isclose
         if np.isclose(c1,origin_circles[pc].get_coordinate()).all():
-            return {"origin": origin_cylinder,
+
+            return {"origin": new_origin,
                     "axis": vector_cylinder,
                     "radius1": radius_cylinder,
                     "height": height_cylinder,
@@ -192,12 +194,11 @@ def check_cylinder_direction(kos_list,obj):
         
         else:
             reverse_vector = vector_cylinder.get_vector()*-1
-            return {"origin": origin_cylinder,
+            return {"origin": new_origin,
                     "axis": Vector(*reverse_vector),
                     "radius1": radius_cylinder,
                     "height": height_cylinder,
                     "kind": "CYLINDER"}
-
 
 def is_DiskCircle_or_DiskAnnular(obj):
     """

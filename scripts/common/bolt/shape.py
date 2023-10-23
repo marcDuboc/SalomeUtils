@@ -76,13 +76,25 @@ class Thread():
     attributes:
         part_id: str
         origin: Point
+        end: Point
         direction: Vector
         height: float
         radius: float
     """
     def __init__(self,  *args, **kwargs) -> None:
+        self.part_id = ""
+        self.origin = Point(0,0,0)
+        self.end = Point(0,0,0)
+        self.axis = Vector(0,0,0)
+        self.height = 0
+        self.radius = 0
+
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
+    
+    def __repr__(self) -> str:
+        return f"Thread({self.origin}, {self.end}, {self.axis}, {self.height}, {self.radius})"
 
 class ShapeCoincidence():
     """
@@ -144,6 +156,10 @@ class ShapeCoincidence():
         logging.info(f"e1: {e1} \t e2: {e2}")
         
         # get the closest surface from both extrmity
+        ori = [s.origin.get_coordinate() for s in surfaces]
+        for o in ori:
+            logging.info(f"ori_n: {o}")
+
         s1n = [self.point_to_point_distance(e1, s.origin.get_coordinate()) for s in surfaces]
         s2n = [self.point_to_point_distance(e2, s.origin.get_coordinate()) for s in surfaces]
         
@@ -285,31 +301,31 @@ class Parse():
     def is_nut_or_bolt(self,subshape: list):
 
         # 1. Extract all the cylinders from the subshapes
-        cylinders = [s for s in subshape if isinstance(s['prop'],Cylinder)]
+        cylinders = [s for s in subshape if isinstance(s,Cylinder)]
         if not cylinders:
             return None
 
         # 2. Get the longest cylinder which will be considered as the main body of the screw
-        cylinder = sorted(cylinders, key=lambda k: k['prop'].height, reverse=True)[0]
-        logging.info(f"cylinder: {cylinder['prop'].height} \t {cylinder['prop'].radius1}")
+        cylinder = sorted(cylinders, key=lambda k: k.height, reverse=True)[0]
+        logging.info(f"cylinder: {cylinder.height} \t {cylinder.radius1}")
 
         # 3. Check all other shapes that might be connected to the cylinder (possible top/bottom surfaces or screw head)
         candidate_surfaces= []
         S = ShapeCoincidence()
         for s in subshape:
-            if isinstance(s['prop'],(Plane, DiskAnnular, DiskCircle)):
-                if S.are_axis_colinear(cylinder['prop'], s['prop'],tol_angle=0.01, tol_dist=0.01):
-                    logging.info(f"candidate: {s['prop']}")
+            if isinstance(s,(Plane, DiskAnnular, DiskCircle)):
+                if S.are_axis_colinear(cylinder, s,tol_angle=0.01, tol_dist=0.01):
+                    logging.info(f"candidate: {s}")
                     candidate_surfaces.append(s)
         
         if candidate_surfaces is not None:
 
             # 4. Filter surfaces that are at the top and bottom of the cylinder
-            top_surface, bottom_surface = S.closests_surfaces_from_cylinder_extremity(cylinder['prop'],[s['prop'] for s in candidate_surfaces])
+            top_surface, bottom_surface = S.closests_surfaces_from_cylinder_extremity(cylinder,[s for s in candidate_surfaces])
             logging.info(f"top_surface: {top_surface} \t bottom_surface: {bottom_surface}")
             if top_surface is not None or bottom_surface is not None:
 
-                obj = self._check_part_kind(cylinder['prop'],top_surface,bottom_surface)
+                obj = self._check_part_kind(cylinder,top_surface,bottom_surface)
 
                 if obj is not None:
                     if obj['kind'] == "NUT":
@@ -375,6 +391,45 @@ class Parse():
 
         return threads
 
+    def _filter_cylinders(self,cylinders:list):
+        """function to filter the cylinder:
+
+           return a list of full cylinders
+        """
+        #1. group cylinder by comparing their origin, if similar they are grouped
+        candidate_cylinder = []
+        origins = []
+        for t in cylinders:
+            if origins == []:
+                candidate_cylinder.append([t])
+                origins.append(t.origin.get_coordinate())
+            else:
+                for i,origin in enumerate(origins):
+                    if np.isclose(origin, t.origin.get_coordinate(), atol=0.1).all():
+                        candidate_cylinder[i].append(t)
+                        break
+                    else:
+                        candidate_cylinder.append([t])
+                        origins.append(t.origin.get_coordinate())
+                        break
+
+        #2. filter the candidate for each group, check the if the sum of the area is egal to np.pi*radius^2*height
+        full_cylinders = []
+        for i,group in enumerate(candidate_cylinder):
+            area = 0
+            for t in group:
+                area += t.area
+
+            area_calculated = 2*group[0].radius1*np.pi * group[0].height
+
+            if np.isclose(area,area_calculated, atol=0.01):
+                fc = group[0]
+                fc.area = area_calculated
+                full_cylinders.append(fc)
+
+        return full_cylinders
+
+
     def is_tread(self,subshape:list):
         """function to check if the shape is a candidate tread
          return a list of tread
@@ -383,11 +438,12 @@ class Parse():
         threads=[]
         candidate=[]
         for s in subshape:
-            if isinstance(s['prop'],Cylinder):
-                if (s['prop'].height/(s['prop'].radius1*2)) > self.THREAD_RATIO_MINIMUM:
-                    candidate.append(s['prop'])
+            if isinstance(s,Cylinder):
+                if (s.height/(s.radius1*2)) > self.THREAD_RATIO_MINIMUM:
+                    candidate.append(s)
 
-        filtered = self._filter_candidate_treads(candidate)
+        #filtered = self._filter_candidate_treads(candidate)
+        filtered = candidate
 
         # create thread object
         for c in filtered:
@@ -423,44 +479,40 @@ class Parse():
             subshapes= Geompy.SubShapeAll(obj,GEOM.FACE)
 
             # get the basic properties from geompy
-            props = list()
+            unfiltred_cyl = list()
+            other = list()
 
             is_candidate = False
             for s in subshapes:
                     p = get_properties(s)
+                    
                     if isinstance(p, Cylinder):
                         if (p.radius1*2)>=min_diameter and (p.radius1*2)<=max_diameter:
                             is_candidate = True
-                            props.append(dict(obj=s, prop=p))
-                            
+                            unfiltred_cyl.append(p)
 
                     elif isinstance(p,tuple(self.allow_type)) and isinstance(p,Cylinder) == False:
-                        props.append(dict(obj=s, prop=p))
+                        other.append(p)
 
             if not is_candidate:
                 return None
             
             else:
-                # first check with the number of cylinder
-                cyls = [s['prop'] for s in props if isinstance(s['prop'],Cylinder)]
-                cyls = list(set(cyls))
+                # regroup cylinder by comparing their origin, if similar and represent a full cylinder they are grouped
+                filtred_cyl =self._filter_cylinders(unfiltred_cyl)
+                props = filtred_cyl + other
                 
-                if len(cyls) < 3:
-                    screw_nut = self.is_nut_or_bolt(props)
-                    if screw_nut is not None:
-                        id = obj.GetStudyEntry()
-                        screw_nut.part_id = id
-                        return screw_nut
+                screw_nut = self.is_nut_or_bolt(props)
+                if screw_nut is not None:
+                    screw_nut.part_id = obj_id
+                    return screw_nut
                     
                 else:
                     is_tread = self.is_tread(props)
                     if is_tread is not None:
-                        id = obj.GetStudyEntry()
                         for t in is_tread:
-                            t.part_id = id
-
+                            t.part_id = obj_id
                         return is_tread
-                    
                     else:
                         return None
 
@@ -508,6 +560,10 @@ def pair_holes(holes_list,tol_angle=0.01, tol_dist=0.01) -> dict:
 
     attributes:
         holes_list: list of holes
+    Pair the hole together
+
+    attributes:
+        hole_list: list of screw
         tol_angle: tolerance angle to check if the axis are colinear
         tol_dist: tolerance distance to check if the axis are colinear
 
@@ -515,7 +571,35 @@ def pair_holes(holes_list,tol_angle=0.01, tol_dist=0.01) -> dict:
         dict(bolts=screw_nut_pairs, treads=screw_thread_pairs)
     """
     logging.info(f"method holes / holes_list: {holes_list}")
-    return dict(bolts=[], threads=[])
+
+    #1. pair the holes together using itertools product
+    hole_pairs = list(product(holes_list, holes_list))
+
+    #2. check if the holes are coincident
+    S = ShapeCoincidence()
+    hole_pairs = [p for p in hole_pairs if S.are_axis_colinear(p[0], p[1],tol_angle, tol_dist)]
+
+    #3. check the min and max distance between the pair holes extremities
+    valid_pairs=[]
+    for p in hole_pairs:
+        p0_s = p[0].origin.get_coordinate()
+        p0_e = p[0].end.get_coordinate()
+        p1_s = p[1].origin.get_coordinate()
+        p1_e = p[1].end.get_coordinate()
+
+        dist = [np.linalg.norm(p0_s - p1_s),np.linalg.norm(p0_s - p1_e),np.linalg.norm(p0_e - p1_s),np.linalg.norm(p0_e - p1_e)]
+        min_dist = np.min(dist)
+        max_dist = np.max(dist)
+
+        # valid if the max distance is larger than the sum height of height the hole
+        if max_dist > p[0].height + p[1].height:
+            valid_pairs.append(p)
+
+    logging.info(f"valid_pairs: {valid_pairs}")
+    return valid_pairs
+            
+
+
 
 def create_virtual_bolt(pair:list):
 
@@ -523,7 +607,7 @@ def create_virtual_bolt(pair:list):
         nut = pair[0]
         screw = pair[1]
 
-    elif type(pair[0])==Screw and type(pair[1])==Nut:
+    elif isinstance(pair[0],Screw) and isinstance(pair[1],Nut):
         screw = pair[0]
         nut = pair[1]
 
