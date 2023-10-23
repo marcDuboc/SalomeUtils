@@ -255,6 +255,8 @@ class BoltGUI(QWidget):
         self.bt_export.clicked.connect(self.select_file)
         self.cb_export_json.stateChanged.connect(self.on_change_export_json)
         self.gp_export_comm.toggled.connect(self.on_change_export_comm)
+        self.cb_screw.clicked.connect(self.on_method_change_screw)
+        self.cb_hole.clicked.connect(self.on_method_change_hole)
         btnQuit.clicked.connect(self.close)
     
     @pyqtSlot(str,str)
@@ -275,6 +277,25 @@ class BoltGUI(QWidget):
     def on_progress(self, value):
         self.pb_search.setValue(value)
         self.pb_search.setFormat(f"{value}%")
+
+    @pyqtSlot()
+    def on_method_change_screw(self):
+        if self.cb_screw.isChecked():
+            self.method = Method.SCREW
+            self.cb_hole.setChecked(False)
+        else:
+            self.method = Method.HOLE
+            self.cb_hole.setChecked(True)
+
+    @pyqtSlot()
+    def on_method_change_hole(self):
+        if self.cb_hole.isChecked():
+            self.method = Method.HOLE
+            self.cb_screw.setChecked(False)
+        else:
+            self.method = Method.SCREW
+            self.cb_screw.setChecked(True)
+
 
     @pyqtSlot()
     def select_file(self):
@@ -318,8 +339,6 @@ class BoltGUI(QWidget):
         else:
             self.cb_export_json.setChecked(True)
 
-    #def resizeEvent(self, event):
-    #     self.table_view.resizeColumnsToContents()
 
     def closeEvent(self, event):
         print("Fermeture de la fenetre, suppression des instances...")

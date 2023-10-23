@@ -503,7 +503,19 @@ def pair_screw_nut_threads(screw_list, nut_list, treads_list,tol_angle=0.01, tol
     return dict(bolts=screw_nut_pairs, threads=screw_thread_pairs)
 
 def pair_holes(holes_list,tol_angle=0.01, tol_dist=0.01) -> dict:
-    pass
+    """
+    Pair the holes together
+
+    attributes:
+        holes_list: list of holes
+        tol_angle: tolerance angle to check if the axis are colinear
+        tol_dist: tolerance distance to check if the axis are colinear
+
+    return:
+        dict(bolts=screw_nut_pairs, treads=screw_thread_pairs)
+    """
+    logging.info(f"method holes / holes_list: {holes_list}")
+    return dict(bolts=[], threads=[])
 
 def create_virtual_bolt(pair:list):
 
