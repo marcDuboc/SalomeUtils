@@ -83,7 +83,7 @@ class ManualWindows(QWidget):
     def on_btn_grp2(self):
         self.select_grp.emit(1)
 
-    @pyqtSlot(int, bool)
+    @pyqtSlot(int, bool, str, str)
     def on_grp_validated(self, grp, validated,msg,color):
         if validated:
             if grp==0:

@@ -229,22 +229,21 @@ class ContactAuto(QObject):
         obj = salome.IDToObject(id)
         grp = ('grp1','grp2')
         logging.debug("selected_grp: {}".format(index))
+
         if selCount == 1:
             if obj.GetType()==37 and obj.GetShapeType()._v== 4:
                 complement = lambda x: 0 if x==1 else 1
                 complement_index = complement(index)
 
                 if self.manual_selection[grp[complement_index]] == id:
-                    self.manual_grp_validated.emit(index,False,msg="Please select a different Group!",color="red")
-                
+                    self.manual_grp_validated.emit(index,False,"Please select a different Group!","red")
                 else:
                     self.manual_selection[grp[index]] = id
-                    self.manual_grp_validated.emit(index,True,msg="Ok",color="green")
-
+                    self.manual_grp_validated.emit(index,True,"Ok","green")
             else:
-                self.manual_grp_validated.emit(index,False,msg="Please select one face group!",color="red")
+                self.manual_grp_validated.emit(index,False,"Please select one face group!","red")
         else:
-            self.manual_grp_validated.emit(index,False,msg="Please select only one group!",color="red")
+            self.manual_grp_validated.emit(index,False,"Please select only one group!","red")
 
     @pyqtSlot()
     def create_manual_grp(self):
