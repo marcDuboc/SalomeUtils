@@ -199,7 +199,7 @@ class MakeComm:
         # master as [m1,m2,...] to m as ('m1','m1',...)
         m = MakeComm._listNameToStrTuple(master)
         s = MakeComm._listNameToStrTuple(slave)
-        return "_F(DISTANCE_MAX=1.0,\n\t\t  GROUP_MA_ESCL={},\n\t\t GROUP_MA_MAIT={}),".format(s,m)
+        return "_F(DISTANCE_MAX=1.0,\n\t\t GROUP_MA_ESCL={},\n\t\t GROUP_MA_MAIT={}),".format(s,m)
 
     def strFSliding(self,master,slave):
         # master as [m1,m2,...] to m as ('m1','m1',...)
