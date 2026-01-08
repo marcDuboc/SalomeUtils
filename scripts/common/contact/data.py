@@ -328,9 +328,6 @@ class ContactManagement():
     - manage visibility from study inputs id
     - hide/show master and slave from study inputs id
     - export contact groups to list
-
-    - @creation TODO:
-                - swap master and slave if necessary
     """
 
     def __init__(self):
