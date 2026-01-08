@@ -64,7 +64,7 @@ class AutoWindows(QWidget):
         self.hbox_options.addWidget(self.cb_merge_by_proximity)
 
         # create checkbox swap adjacent slaves on same part
-        self.cb_swap_adjacent_slaves = QCheckBox("avoid adjacent salves on same part", self)
+        self.cb_swap_adjacent_slaves = QCheckBox("avoid adjacent slaves on same part", self)
         self.cb_swap_adjacent_slaves.setChecked(False)
 
         # put the checkbox in a vertical layout
