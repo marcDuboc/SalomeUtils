@@ -218,11 +218,18 @@ def is_DiskCircle_or_DiskAnnular(obj):
 
     edges_type = [type(e) for e in edges]
 
+    if any(item == type(None) for item in edges_type) == True:
+            logging.debug("None found")
+            return None
+
     if any(item in (Circle,ArcCircle) for item in edges_type) == False:
+            logging.debug("No circle or arc circle found")
             return None
         
     if any(item == Segment for item in edges_type) == True:
+            logging.debug("Segment found")
             return None
+    
     else:
         origin_circles = []
         radius_circles = []

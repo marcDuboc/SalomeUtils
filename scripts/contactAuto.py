@@ -179,7 +179,7 @@ class ContactAuto(QObject):
             res, candidate = self.Intersect.intersection(combine[i][0], combine[i][1],gap=gap,tol=angle,merge_by_part=merge_by_part, merge_by_proximity=merge_by_proximity)
             logging.debug("process_contact: {} {}".format(res,candidate))
 
-            if res:
+            if res and candidate != None:
                 # add new contacts to contactManager
                 for c in candidate:
                     grp1 = GroupItem()
