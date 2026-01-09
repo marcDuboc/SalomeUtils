@@ -210,13 +210,13 @@ class BoltGUI(QWidget):
         self.gp_export_comm.setChecked(True)
 
         #create checkbox for options exports ASTER
-        self.cb_export_aster_regroup= QCheckBox("Regroup masters on same slave (LIAISON_MAIL)", self)
-        self.cb_export_aster_regroup.setChecked(True)
+        #self.cb_export_aster_regroup= QCheckBox("Regroup masters on same slave (LIAISON_MAIL)", self)
+        #self.cb_export_aster_regroup.setChecked(True)
 
         #create hbox for aster options
-        self.hbox_2 = QHBoxLayout()
-        self.hbox_2.addWidget(self.cb_export_aster_regroup)
-        self.gp_export_comm.setLayout(self.hbox_2)
+        #self.hbox_2 = QHBoxLayout()
+        #self.hbox_2.addWidget(self.cb_export_aster_regroup)
+        #self.gp_export_comm.setLayout(self.hbox_2)
 
         #add checkbox in a horizontal layout
         self.hbox_3 = QVBoxLayout()
