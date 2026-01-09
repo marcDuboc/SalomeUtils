@@ -26,11 +26,15 @@ Collection of Python scripts to automate tasks in the Salome platform, particula
 - Direct export to Code_Aster
 - Master/slave contact management
 
+![contact 3D](img/autocontact.png)
+
 ### 1D Virtual Bolts
 - Automatic recognition of screws, nuts, and holes
 - Conversion to 1D elements to optimize calculations
 - Automatic calculation of mechanical properties
 - Support for different types of fasteners
+
+![virtual bolts](img/bolt1d.png)
 
 ### Part Management
 - Automatic batch renaming

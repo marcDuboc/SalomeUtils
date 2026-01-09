@@ -326,7 +326,7 @@ class Bolt1D(QObject):
             self.Gui.model.updateBolt.connect(self.update_bolt)
 
             # delete parts
-            delete=False
+            delete=True
             if delete:
                 for grp in parts_to_delete:
                     Gst.removeFromStudy(grp)
