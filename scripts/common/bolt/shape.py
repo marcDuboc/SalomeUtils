@@ -276,7 +276,7 @@ class Parse():
 
         if top_r >= cylinder_prop.radius1 and bot_r >= cylinder_prop.radius1:
             if ratio > self.NUT_RATIO_MINIMUM and ratio < self.NUT_RATIO_MAXIMUM and dist >= cylinder_prop.height:
-                axis = cylinder_prop.axis.get_vector()
+                axis = bot_prop.origin.get_coordinate() - top_prop.origin.get_coordinate()
                 axis_norm = axis/np.linalg.norm(axis)
                 return dict(kind="NUT", 
                             height=dist, 
@@ -288,7 +288,10 @@ class Parse():
         
         elif bot_r <= cylinder_prop.radius1 or top_r <= cylinder_prop.radius1:
             if ratio > self.SCREW_RATIO_MINIMUM and dist >= cylinder_prop.height:
-                axis = (top_prop.origin.get_coordinate() - bot_prop.origin.get_coordinate())
+                if bot_r <= cylinder_prop.radius1:
+                    axis = (bot_prop.origin.get_coordinate() - top_prop.origin.get_coordinate())
+                else:
+                    axis = (top_prop.origin.get_coordinate() - bot_prop.origin.get_coordinate())
                 axis_norm = axis/np.linalg.norm(axis)
                 return dict(kind="SCREW", 
                             height=dist,
